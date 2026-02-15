@@ -4,17 +4,17 @@
 describe "CLI Basic Commands"
 
 it "should show the version" '
-    out=$(./cogeni --version)
+    out=$($COGENI_BIN --version)
     assert_contains "$out" "cogeni version 0.1.0"
 '
 
 it "should dump AST using ast command" '
-    out=$(./cogeni ast examples/fullstack/frontend/api.ts)
+    out=$($COGENI_BIN ast examples/fullstack/frontend/api.ts)
     assert_contains "$out" "\"type\": \"program\""
 '
 
 it "should run inline lua using run -e" '
-    out=$(./cogeni run -e "print(123 + 456)")
+    out=$($COGENI_BIN run -e "print(123 + 456)")
     assert_contains "$out" "579"
 '
 
@@ -27,7 +27,7 @@ it "should clean generated content using clean command" '
 hello
 # </cogeni>
 EOF
-    ./cogeni clean clean_test.txt
+    $COGENI_BIN clean clean_test.txt
     assert_not_contains "$(cat clean_test.txt)" "hello"
     assert_contains "$(cat clean_test.txt)" "id=\"msg\""
     rm clean_test.txt

@@ -267,7 +267,7 @@ func (m *GrammarManager) compileGrammar(parserC, libPath string) error {
 
 // loadSharedLibrary uses purego to dynamically load the compiled grammar and retrieve the Language symbol.
 func (m *GrammarManager) loadSharedLibrary(path, lang string) (*sitter.Language, error) {
-	lib, err := purego.Dlopen(path, purego.RTLD_NOW|purego.RTLD_GLOBAL)
+	lib, err := openLibrary(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open shared library %s: %w", path, err)
 	}

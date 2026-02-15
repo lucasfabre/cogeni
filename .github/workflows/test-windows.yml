@@ -1,0 +1,19 @@
+name: Test Windows
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - run: go build -v -o cogeni.exe ./src
+      - run: go test -v ./...
+      - run: ./tests/shell/framework/run_all_tests.sh

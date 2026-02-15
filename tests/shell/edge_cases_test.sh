@@ -7,13 +7,13 @@ it "should fail gracefully on malformed lua script" '
     cat > bad_script.lua <<EOF
         this is not lua
 EOF
-    out=$(./cogeni run bad_script.lua 2>&1)
+    out=$($COGENI_BIN run bad_script.lua 2>&1)
     assert_contains "$out" "failed to execute lua script"
     rm bad_script.lua
 '
 
 it "should fail on non-existent file" '
-    out=$(./cogeni non_existent.lua 2>&1)
+    out=$($COGENI_BIN non_existent.lua 2>&1)
     # The actual error comes from root command if no subcommand is found and it tries to process it as a file
     assert_contains "$out" "failed to read file"
 '
@@ -23,7 +23,7 @@ it "should handle multiple blocks targeting the same file" "
         cogeni.outfile('out1', 'target.txt')
         write('out1', 'content 1')
 EOF
-    ./cogeni run multi_target.lua
+    $COGENI_BIN run multi_target.lua
     assert_eq \"\$(cat target.txt)\" \"content 1\"
     rm multi_target.lua target.txt
 "
@@ -36,7 +36,7 @@ EOF
     cat > multi_tag.lua <<EOF
         write('mytag', 'second')
 EOF
-    ./cogeni multi_tag.lua target_file.txt
+    $COGENI_BIN multi_tag.lua target_file.txt
     assert_contains \"\$(cat target_file.txt)\" \"second\"
     rm multi_tag.lua target_file.txt
 "

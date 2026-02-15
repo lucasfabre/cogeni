@@ -31,7 +31,7 @@ fi
 
 echo -e "\nRunning Lua API tests..."
 # Execute Lua tests via the CLI
-if ! ./cogeni run tests/lua/framework/test.lua; then
+if ! $COGENI_BIN run tests/lua/framework/test.lua; then
 	echo -e "${RED}[FAIL]${NC} Lua tests failed"
 	exit 1
 fi
