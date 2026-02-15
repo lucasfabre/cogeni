@@ -1,0 +1,5 @@
+main
+cogeni
+dist/
+/tests/grammars
+.cache/

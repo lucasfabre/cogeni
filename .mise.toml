@@ -1,0 +1,14 @@
+[tools]
+go = "latest"
+just = "latest"
+pre-commit = "latest"
+golangci-lint = "latest"
+node = "lts"
+shfmt = "latest"
+shellcheck = "latest"
+stylua = "latest"
+upx = "latest"
+goreleaser = "latest"
+
+[shell_alias]
+cogeni = "$(git rev-parse --show-toplevel)/cogeni"
