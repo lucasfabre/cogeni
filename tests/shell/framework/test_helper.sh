@@ -7,6 +7,12 @@ NC='\033[0m'
 PASSES=0
 FAILURES=0
 
+if [ -f "cogeni.exe" ]; then
+    COGENI_BIN="./cogeni.exe"
+else
+    COGENI_BIN="./cogeni"
+fi
+
 describe() {
 	echo -e "
 $1"

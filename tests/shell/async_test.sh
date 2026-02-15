@@ -14,7 +14,7 @@ it "should support multiple concurrent async tasks" '
             end)
         end
 EOF
-    out=$(./cogeni run test_multi_async.lua)
+    out=$($COGENI_BIN run test_multi_async.lua)
     for i in {1..5}; do
         assert_contains "$out" "FINISH:$i"
     done
@@ -29,7 +29,7 @@ it "should handle errors in async tasks" '
 EOF
     # Errors in async tasks currently might just print to stderr and not fail the main process immediately
     # We should verify how it behaves.
-    out=$(./cogeni run test_async_err.lua 2>&1)
+    out=$($COGENI_BIN run test_async_err.lua 2>&1)
     assert_contains "$out" "something went wrong"
     rm test_async_err.lua
 '
