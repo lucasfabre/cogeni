@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -165,11 +167,37 @@ var watchCmd = &cobra.Command{
 			return err
 		}
 
-		fmt.Println("Watching for changes...")
+		fmt.Println("Watching for changes. Press 'q' to exit.")
+
+		// Setup signal handling
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+		// Setup stop channel for user input
+		stopChan := make(chan struct{})
+
+		// Start listening for user input if we're not reading script from stdin
+		if !isStdin {
+			go func() {
+				scanner := bufio.NewScanner(os.Stdin)
+				for scanner.Scan() {
+					if strings.TrimSpace(scanner.Text()) == "q" {
+						close(stopChan)
+						return
+					}
+				}
+			}()
+		}
 
 		// Event loop
 		for {
 			select {
+			case <-sigChan:
+				fmt.Println("\nReceived interrupt, shutting down...")
+				return nil
+			case <-stopChan:
+				fmt.Println("Exiting watch mode...")
+				return nil
 			case event, ok := <-watcher.Events:
 				if !ok {
 					return nil
