@@ -7,7 +7,8 @@ it "should fail gracefully on malformed lua script" '
     cat > bad_script.lua <<EOF
         this is not lua
 EOF
-    out=$($COGENI_BIN run bad_script.lua 2>&1)
+    # Disable set -e for this command as it is expected to fail
+    out=$($COGENI_BIN run bad_script.lua 2>&1 || true)
     assert_contains "$out" "failed to execute lua script"
     rm bad_script.lua
 '
@@ -34,9 +35,11 @@ it "should handle multiple blocks targeting the same tag" "
 # </cogeni>
 EOF
     cat > multi_tag.lua <<EOF
+        cogeni.outtag('mytag', 'target_file.txt', 'mytag')
         write('mytag', 'second')
+        cogeni.process('target_file.txt')
 EOF
-    $COGENI_BIN multi_tag.lua target_file.txt
+    \$COGENI_BIN run multi_tag.lua
     assert_contains \"\$(cat target_file.txt)\" \"second\"
     rm multi_tag.lua target_file.txt
 "

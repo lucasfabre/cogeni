@@ -7,10 +7,19 @@ NC='\033[0m'
 PASSES=0
 FAILURES=0
 
-if [ -f "cogeni.exe" ]; then
-    COGENI_BIN="./cogeni.exe"
-else
-    COGENI_BIN="./cogeni"
+# Determine absolute path to cogeni binary if not already set
+if [ -z "$COGENI_BIN" ]; then
+	if [ -f "./cogeni.exe" ]; then
+		COGENI_BIN="$(realpath ./cogeni.exe)"
+		export COGENI_BIN
+	elif [ -f "./cogeni" ]; then
+		COGENI_BIN="$(realpath ./cogeni)"
+		export COGENI_BIN
+	else
+		# Fallback - assume we are in project root
+		COGENI_BIN="$(pwd)/cogeni"
+		export COGENI_BIN
+	fi
 fi
 
 describe() {
@@ -21,13 +30,27 @@ $1"
 it() {
 	local name="$1"
 	local cmd="$2"
+	local helper_path
+	helper_path="$(realpath "${BASH_SOURCE[0]}")"
 
-	if eval "$cmd"; then
+	if [ "$(type -t setup)" == "function" ]; then
+		setup
+	fi
+
+	# Run the command with COGENI_BIN exported
+	# Use a subshell with 'set -e' to ensure any failing command (including assertions)
+	# results in a non-zero exit code for the entire test block.
+	# We source the helper_path to make assertion functions available.
+	if bash -c "set -e; export COGENI_BIN=\"$COGENI_BIN\"; source \"$helper_path\"; $cmd"; then
 		echo -e "  ${GREEN}[PASS]${NC} $name"
 		PASSES=$((PASSES + 1))
 	else
 		echo -e "  ${RED}[FAIL]${NC} $name"
 		FAILURES=$((FAILURES + 1))
+	fi
+
+	if [ "$(type -t teardown)" == "function" ]; then
+		teardown
 	fi
 }
 
@@ -37,6 +60,7 @@ assert_contains() {
 	if [[ $haystack == *"$needle"* ]]; then
 		return 0
 	else
+		echo "Expected to contain '$needle' but got '$haystack'" >&2
 		return 1
 	fi
 }
@@ -58,6 +82,15 @@ assert_eq() {
 		return 0
 	else
 		echo "Expected '$expected' but got '$actual'" >&2
+		return 1
+	fi
+}
+
+assert_file_exists() {
+	if [ -f "$1" ]; then
+		return 0
+	else
+		echo "File '$1' does not exist" >&2
 		return 1
 	fi
 }

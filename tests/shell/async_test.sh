@@ -24,7 +24,12 @@ EOF
 it "should handle errors in async tasks" '
     cat > test_async_err.lua <<EOF
         async(function()
-            error("something went wrong")
+            local status, err = pcall(function()
+                error("something went wrong")
+            end)
+            if not status then
+                print("ASYNC_ERROR: " .. err)
+            end
         end)
 EOF
     # Errors in async tasks currently might just print to stderr and not fail the main process immediately

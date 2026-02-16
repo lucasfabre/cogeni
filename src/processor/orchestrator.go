@@ -79,6 +79,20 @@ func (c *Coordinator) RegisterTask(path string) {
 	})
 }
 
+// FinishTask marks a manually registered task as complete.
+func (c *Coordinator) FinishTask(path string) {
+	absPath, _ := filepath.Abs(path)
+	if t, ok := c.tasks.Load(absPath); ok {
+		task := t.(*Task)
+		select {
+		case <-task.done:
+			// Already closed
+		default:
+			close(task.done)
+		}
+	}
+}
+
 // Process initiates the code generation process for a file.
 // If the file is already being processed by another goroutine, it waits for it to complete.
 // requestor is the absolute path of the file whose script triggered this process call.
@@ -125,6 +139,60 @@ func (c *Coordinator) Wait() {
 	c.wg.Wait()
 	// Close the runtime pool to free resources
 	c.runtimePool.Close()
+}
+
+// WaitWithoutClosing blocks until all registered and spawned tasks have completed,
+// but keeps the runtime pool open for subsequent runs.
+func (c *Coordinator) WaitWithoutClosing() {
+	c.wg.Wait()
+}
+
+// Close releases resources held by the coordinator.
+func (c *Coordinator) Close() {
+	c.runtimePool.Close()
+}
+
+// Invalidate invalidates a file and all its dependents, removing them from the processing cache.
+// This forces them to be re-processed in the next run.
+func (c *Coordinator) Invalidate(changedPath string) {
+	absPath, _ := filepath.Abs(changedPath)
+	visited := make(map[string]bool)
+	queue := []string{absPath}
+
+	for len(queue) > 0 {
+		curr := queue[0]
+		queue = queue[1:]
+
+		if visited[curr] {
+			continue
+		}
+		visited[curr] = true
+
+		// Clear state for the invalidated file
+		c.fileCache.Delete(curr)
+		c.Results.Delete(curr)
+		c.tasks.Delete(curr)
+
+		// Find files that depend on curr and add them to queue
+		c.tasks.Range(func(key, value any) bool {
+			task := value.(*Task)
+			// Check if this task depends on the currently invalidated file
+			task.mu.Lock()
+			depends := false
+			for _, dep := range task.dependencies {
+				if dep == curr {
+					depends = true
+					break
+				}
+			}
+			task.mu.Unlock()
+
+			if depends {
+				queue = append(queue, task.path)
+			}
+			return true
+		})
+	}
 }
 
 // Commit flushes all buffered changes from the Results map to the filesystem.
@@ -186,9 +254,7 @@ func (c *Coordinator) GetGraph() map[string][]string {
 	graph := make(map[string][]string)
 	c.tasks.Range(func(key, value any) bool {
 		task := value.(*Task)
-		if len(task.dependencies) > 0 {
-			graph[task.path] = task.dependencies
-		}
+		graph[task.path] = task.dependencies
 		return true
 	})
 	return graph
@@ -236,4 +302,43 @@ func (c *Coordinator) readFileContent(path string) ([]byte, error) {
 	// Cache the content
 	c.fileCache.Store(absPath, content)
 	return content, nil
+}
+
+// DetectCycles checks for circular dependencies in the task graph.
+// Returns an error describing the cycle if one is found.
+func (c *Coordinator) DetectCycles() error {
+	graph := c.GetGraph()
+	visited := make(map[string]bool)
+	recursionStack := make(map[string]bool)
+
+	var checkCycle func(node string) ([]string, bool)
+	checkCycle = func(node string) ([]string, bool) {
+		visited[node] = true
+		recursionStack[node] = true
+
+		if deps, ok := graph[node]; ok {
+			for _, dep := range deps {
+				if !visited[dep] {
+					if path, found := checkCycle(dep); found {
+						return append([]string{node}, path...), true
+					}
+				} else if recursionStack[dep] {
+					return []string{node, dep}, true
+				}
+			}
+		}
+
+		recursionStack[node] = false
+		return nil, false
+	}
+
+	for node := range graph {
+		if !visited[node] {
+			if path, found := checkCycle(node); found {
+				return fmt.Errorf("circular dependency detected: %v", path)
+			}
+		}
+	}
+
+	return nil
 }
