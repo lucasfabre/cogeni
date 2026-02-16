@@ -1,0 +1,9 @@
+{
+  "label": "Go API",
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "slug": "go-api",
+    "description": "Go API Reference for cogeni packages."
+  }
+}

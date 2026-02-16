@@ -158,3 +158,8 @@ test-lua: build
 test: build
 	go test ./...
 	./tests/shell/framework/run_all_tests.sh
+
+build-docs:
+	python3 ./scripts/build_man_pages_md.py
+	./scripts/build_api_docs_md.sh
+	./scripts/build_site.sh
