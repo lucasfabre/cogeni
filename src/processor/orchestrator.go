@@ -19,16 +19,17 @@ import (
 // handles inter-file dependencies automatically.
 type Coordinator struct {
 	cfg       *config.Config
-	tasks     sync.Map // map[string]*Task
+	mu        sync.RWMutex
+	tasks     map[string]*Task
 	wg        sync.WaitGroup
 	CleanMode bool
 
 	// Results buffers content changes to handle recursive updates and preview changes.
-	Results sync.Map // map[string]string
+	Results map[string]string
 
 	runtimePool *RuntimePool
 
-	fileCache sync.Map // map[string][]byte
+	fileCache map[string][]byte
 }
 
 // Task represents the processing state of a single file.
@@ -50,6 +51,9 @@ func (t *Task) addDependency(path string) {
 func NewCoordinator(cfg *config.Config) *Coordinator {
 	return &Coordinator{
 		cfg:         cfg,
+		tasks:       make(map[string]*Task),
+		Results:     make(map[string]string),
+		fileCache:   make(map[string][]byte),
 		runtimePool: NewRuntimePool(cfg, 10), // Pool up to 10 runtimes
 	}
 }
@@ -57,18 +61,26 @@ func NewCoordinator(cfg *config.Config) *Coordinator {
 // RegisterTask manually registers a file to be tracked by the coordinator.
 func (c *Coordinator) RegisterTask(path string) {
 	absPath, _ := filepath.Abs(path)
-	c.tasks.LoadOrStore(absPath, &Task{
-		path:         absPath,
-		done:         make(chan struct{}),
-		dependencies: make([]string, 0),
-	})
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if _, ok := c.tasks[absPath]; !ok {
+		c.tasks[absPath] = &Task{
+			path:         absPath,
+			done:         make(chan struct{}),
+			dependencies: make([]string, 0),
+		}
+	}
 }
 
 // FinishTask marks a manually registered task as complete.
 func (c *Coordinator) FinishTask(path string) {
 	absPath, _ := filepath.Abs(path)
-	if t, ok := c.tasks.Load(absPath); ok {
-		task := t.(*Task)
+	c.mu.RLock()
+	task, ok := c.tasks[absPath]
+	c.mu.RUnlock()
+
+	if ok {
 		select {
 		case <-task.done:
 			// Already closed
@@ -87,21 +99,29 @@ func (c *Coordinator) Process(path string, requestor string) error {
 	}
 
 	// If this call comes from another task, record the dependency.
-	if r, ok := c.tasks.Load(requestor); ok {
-		r.(*Task).addDependency(absPath)
+	c.mu.RLock()
+	requestorTask, ok := c.tasks[requestor]
+	c.mu.RUnlock()
+
+	if ok {
+		requestorTask.addDependency(absPath)
 	}
 
-	task := &Task{
-		path:         absPath,
-		done:         make(chan struct{}),
-		dependencies: make([]string, 0),
+	c.mu.Lock()
+	task, loaded := c.tasks[absPath]
+	if !loaded {
+		task = &Task{
+			path:         absPath,
+			done:         make(chan struct{}),
+			dependencies: make([]string, 0),
+		}
+		c.tasks[absPath] = task
 	}
+	c.mu.Unlock()
 
-	// Atomically check if the task is already running or register it.
-	actual, loaded := c.tasks.LoadOrStore(absPath, task)
 	if loaded {
 		// Wait for the existing worker to finish.
-		<-actual.(*Task).done
+		<-task.done
 		return nil
 	}
 
@@ -152,14 +172,13 @@ func (c *Coordinator) Invalidate(changedPath string) {
 		visited[curr] = true
 
 		// Clear state for the invalidated file
-		c.fileCache.Delete(curr)
-		c.Results.Delete(curr)
-		c.tasks.Delete(curr)
+		c.mu.Lock()
+		delete(c.fileCache, curr)
+		delete(c.Results, curr)
+		delete(c.tasks, curr)
 
-		// Find files that depend on curr and add them to queue
-		c.tasks.Range(func(key, value any) bool {
-			task := value.(*Task)
-			// Check if this task depends on the currently invalidated file
+		dependents := make([]string, 0)
+		for _, task := range c.tasks {
 			task.mu.Lock()
 			depends := false
 			for _, dep := range task.dependencies {
@@ -171,10 +190,12 @@ func (c *Coordinator) Invalidate(changedPath string) {
 			task.mu.Unlock()
 
 			if depends {
-				queue = append(queue, task.path)
+				dependents = append(dependents, task.path)
 			}
-			return true
-		})
+		}
+		c.mu.Unlock()
+
+		queue = append(queue, dependents...)
 	}
 }
 
@@ -183,10 +204,16 @@ func (c *Coordinator) Invalidate(changedPath string) {
 // Uses content hashing for efficient change detection on large files.
 func (c *Coordinator) Commit() error {
 	var errs []error
-	c.Results.Range(func(key, value any) bool {
-		path := key.(string)
-		content := value.(string)
 
+	c.mu.RLock()
+	// Copy map to avoid holding lock during I/O
+	resultsCopy := make(map[string]string)
+	for k, v := range c.Results {
+		resultsCopy[k] = v
+	}
+	c.mu.RUnlock()
+
+	for path, content := range resultsCopy {
 		// Optimization: skip write if content is identical to what's on disk.
 		// Use SHA256 hashing for efficient comparison of large files.
 		original, err := os.ReadFile(path)
@@ -194,15 +221,14 @@ func (c *Coordinator) Commit() error {
 			originalHash := sha256.Sum256(original)
 			newHash := sha256.Sum256([]byte(content))
 			if originalHash == newHash {
-				return true // No change, skip write
+				continue // No change, skip write
 			}
 		}
 
 		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 			errs = append(errs, fmt.Errorf("failed to write %s: %w", path, err))
 		}
-		return true
-	})
+	}
 
 	if len(errs) > 0 {
 		return fmt.Errorf("commit failed with %d errors: %v", len(errs), errs)
@@ -212,11 +238,12 @@ func (c *Coordinator) Commit() error {
 
 // GetResults returns a snapshot of all pending file changes.
 func (c *Coordinator) GetResults() map[string]string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	res := make(map[string]string)
-	c.Results.Range(func(key, value any) bool {
-		res[key.(string)] = value.(string)
-		return true
-	})
+	for key, value := range c.Results {
+		res[key] = value
+	}
 	return res
 }
 
@@ -224,22 +251,21 @@ func (c *Coordinator) GetResults() map[string]string {
 // It returns (content, true) if the file has been processed, or ("", false) otherwise.
 func (c *Coordinator) GetResult(path string) (string, bool) {
 	absPath, _ := filepath.Abs(path)
-	val, ok := c.Results.Load(absPath)
-	if !ok {
-		return "", false
-	}
-	return val.(string), true
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	val, ok := c.Results[absPath]
+	return val, ok
 }
 
 // GetGraph returns the recorded file dependency graph.
 // Map key is the file path, value is the list of files it depends on.
 func (c *Coordinator) GetGraph() map[string][]string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	graph := make(map[string][]string)
-	c.tasks.Range(func(key, value any) bool {
-		task := value.(*Task)
-		graph[task.path] = task.dependencies
-		return true
-	})
+	for key, task := range c.tasks {
+		graph[key] = task.dependencies
+	}
 	return graph
 }
 
@@ -254,12 +280,19 @@ func (c *Coordinator) WaitForReader(path string, requestor string) error {
 	}
 
 	// Record the dependency.
-	if r, ok := c.tasks.Load(requestor); ok {
-		r.(*Task).addDependency(absPath)
+	c.mu.RLock()
+	requestorTask, ok := c.tasks[requestor]
+	c.mu.RUnlock()
+
+	if ok {
+		requestorTask.addDependency(absPath)
 	}
 
-	if t, ok := c.tasks.Load(absPath); ok {
-		task := t.(*Task)
+	c.mu.RLock()
+	task, ok := c.tasks[absPath]
+	c.mu.RUnlock()
+
+	if ok {
 		// Wait for the file's worker to signal completion.
 		<-task.done
 	}
@@ -272,8 +305,12 @@ func (c *Coordinator) readFileContent(path string) ([]byte, error) {
 	absPath, _ := filepath.Abs(path)
 
 	// Check cache first
-	if cached, ok := c.fileCache.Load(absPath); ok {
-		return cached.([]byte), nil
+	c.mu.RLock()
+	cached, ok := c.fileCache[absPath]
+	c.mu.RUnlock()
+
+	if ok {
+		return cached, nil
 	}
 
 	// Read from disk
@@ -283,7 +320,10 @@ func (c *Coordinator) readFileContent(path string) ([]byte, error) {
 	}
 
 	// Cache the content
-	c.fileCache.Store(absPath, content)
+	c.mu.Lock()
+	c.fileCache[absPath] = content
+	c.mu.Unlock()
+
 	return content, nil
 }
 
