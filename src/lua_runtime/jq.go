@@ -10,11 +10,15 @@ import (
 // jqQuery executes a JQ query against a Lua value (typically an AST table).
 // It is exposed to Lua as jq.query(data, query_string).
 //
-// data: Any Lua value (table, string, number, etc.) to be queried.
-// query_string: A standard JQ query string (e.g., ".children[] | select(.type == 'class')").
-//
-// Returns: A single Lua value if the query has one result, or a table of values
-// if there are multiple results. Returns nil if no matches are found.
+// <lua_api>
+// @module jq
+// @function query
+// @summary Executes a JQ query against a Lua value.
+// @usage jq.query(val, query)
+// @param val any The value to query (usually an AST table).
+// @param query string The JQ query string.
+// @returns any|table A single result or a table of results, or nil.
+// </lua_api>
 func (rt *LuaRuntime) jqQuery(L *lua.LState) int {
 	value := L.CheckAny(1)
 	queryString := L.CheckString(2)

@@ -50,42 +50,6 @@ type LuaRuntime struct {
 
 // New initializes a LuaRuntime, registers all custom modules (cogeni, fs, json, jq),
 // and prepares the AST parser.
-//
-// <lua_api>
-// @module global
-// @function write
-// @summary Buffers text for a specific output block.
-// @usage write(id, content)
-// @param id string The block ID.
-// @param content string The content to write.
-// </lua_api>
-//
-// <lua_api>
-// @module global
-// @function async
-// @summary Starts a new asynchronous task.
-// @usage async(fn, ...)
-// @param fn function The function to run asynchronously.
-// @param ... any Arguments to pass to the function.
-// @returns userdata A job handle.
-// </lua_api>
-//
-// <lua_api>
-// @module global
-// @function await
-// @summary Pauses until a job completes.
-// @usage await(job)
-// @param job userdata The job handle to wait for.
-// @returns ... any The results of the async function.
-// </lua_api>
-//
-// <lua_api>
-// @module global
-// @function sleep
-// @summary Pauses execution for a duration.
-// @usage sleep(seconds)
-// @param seconds number The number of seconds to sleep.
-// </lua_api>
 func New(cfg *config.Config) (*LuaRuntime, error) {
 	parser, err := astparser.New(cfg.Grammar.Location)
 	if err != nil {
@@ -215,25 +179,6 @@ func (rt *LuaRuntime) REPL() error {
 
 // registerCogeniModule exposes the 'cogeni' table to Lua.
 // Methods: read_ast, register_grammar, get_grammar, process, outfile, outtag.
-//
-// <lua_api>
-// @module cogeni
-// @function outfile
-// @summary Redirects write(id) to a file.
-// @usage cogeni.outfile(id, path)
-// @param id string The block ID.
-// @param path string The file path to overwrite.
-// </lua_api>
-//
-// <lua_api>
-// @module cogeni
-// @function outtag
-// @summary Redirects write(id) to a specific tag in a file.
-// @usage cogeni.outtag(id, path, tag)
-// @param id string The block ID.
-// @param path string The file path.
-// @param tag string The tag in the file.
-// </lua_api>
 func (rt *LuaRuntime) registerCogeniModule() {
 	cogeniTable := rt.L.CreateTable(0, 6)
 	rt.L.SetField(cogeniTable, "read_ast", rt.L.NewFunction(rt.cogeniReadAST))

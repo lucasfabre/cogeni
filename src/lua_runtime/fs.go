@@ -10,13 +10,15 @@ import (
 // fsFind recursively searches for files and directories matching specific criteria.
 // It is exposed to Lua as fs.find(dir, options).
 //
-// dir: The starting directory for the search.
-// options: A table containing optional filters:
-//   - type: "f" for files, "d" for directories.
-//   - name: Glob pattern for matching filenames (e.g., "*.lua").
-//   - maxdepth: Maximum recursion depth (integer).
-//
-// Returns: A table where keys are the relative paths found and values are 'true'.
+// <lua_api>
+// @module fs
+// @function find
+// @summary Recursively finds files and directories.
+// @usage fs.find(dir, options)
+// @param dir string The starting directory.
+// @param options table Filters (type="f"|"d", name="glob", maxdepth=N).
+// @returns table A table where keys are paths and values are 'true'.
+// </lua_api>
 func (rt *LuaRuntime) fsFind(L *lua.LState) int {
 	dir := L.CheckString(1)
 	options := L.OptTable(2, L.CreateTable(0, 0))
@@ -98,6 +100,15 @@ func (rt *LuaRuntime) fsFind(L *lua.LState) int {
 
 // fsBaseDir returns the directory of a path.
 // Lua usage: dir = fs.basedir("a/b/c.txt") -> "a/b"
+//
+// <lua_api>
+// @module fs
+// @function basedir
+// @summary Returns the directory of a path.
+// @usage fs.basedir(path)
+// @param path string The file path.
+// @returns string The directory part of the path.
+// </lua_api>
 func (rt *LuaRuntime) fsBaseDir(L *lua.LState) int {
 	path := L.CheckString(1)
 	L.Push(lua.LString(filepath.Dir(path)))
@@ -106,6 +117,15 @@ func (rt *LuaRuntime) fsBaseDir(L *lua.LState) int {
 
 // fsBaseName returns the last element of a path.
 // Lua usage: name = fs.basename("a/b/c.txt") -> "c.txt"
+//
+// <lua_api>
+// @module fs
+// @function basename
+// @summary Returns the last element of a path.
+// @usage fs.basename(path)
+// @param path string The file path.
+// @returns string The file name.
+// </lua_api>
 func (rt *LuaRuntime) fsBaseName(L *lua.LState) int {
 	path := L.CheckString(1)
 	L.Push(lua.LString(filepath.Base(path)))
@@ -114,6 +134,15 @@ func (rt *LuaRuntime) fsBaseName(L *lua.LState) int {
 
 // fsPathJoin joins multiple path elements.
 // Lua usage: path = fs.join("a", "b", "c") -> "a/b/c"
+//
+// <lua_api>
+// @module fs
+// @function join
+// @summary Joins multiple path elements.
+// @usage fs.join(...)
+// @param ... string Path elements to join.
+// @returns string The joined path.
+// </lua_api>
 func (rt *LuaRuntime) fsPathJoin(L *lua.LState) int {
 	top := L.GetTop()
 	parts := make([]string, top)

@@ -7,6 +7,15 @@ import (
 
 // yamlEncode encodes a Lua value to a YAML string.
 // Lua usage: str = yaml.encode(data)
+//
+// <lua_api>
+// @module yaml
+// @function encode
+// @summary Encodes a Lua value to a YAML string.
+// @usage yaml.encode(data)
+// @param data any The Lua value to encode.
+// @returns string The YAML string.
+// </lua_api>
 func (rt *LuaRuntime) yamlEncode(L *lua.LState) int {
 	lv := L.CheckAny(1)
 	goValue := luaValueToGoValue(lv)
@@ -24,6 +33,15 @@ func (rt *LuaRuntime) yamlEncode(L *lua.LState) int {
 
 // yamlDecode decodes a YAML string into a Lua table.
 // Lua usage: data = yaml.decode(str)
+//
+// <lua_api>
+// @module yaml
+// @function decode
+// @summary Decodes a YAML string into a Lua table.
+// @usage yaml.decode(str)
+// @param str string The YAML string to decode.
+// @returns any The decoded Lua value (table, string, number, etc).
+// </lua_api>
 func (rt *LuaRuntime) yamlDecode(L *lua.LState) int {
 	yamlStr := L.CheckString(1)
 

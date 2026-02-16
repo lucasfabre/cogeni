@@ -12,16 +12,15 @@ import (
 // cogeniReadAST parses source code into a detailed AST.
 // It is exposed to Lua as cogeni.read_ast(source, language).
 //
-// source: Can be a file path string or a file handle (table with a read() method).
-// language: The name of the Tree-sitter grammar to use (e.g., "python", "typescript").
-//
-// Path Resolution: If source is a relative path string, it is resolved against
-// the directory of the currently executing Lua script (_CURRENT_FILE).
-//
-// Dependency Management: If the file being read is also being updated by another
-// task in the same cogeni run, this call will block until that task is complete.
-//
-// Returns: (ast_table, nil) on success, or (nil, error_string) on failure.
+// <lua_api>
+// @module cogeni
+// @function read_ast
+// @summary Parses source code into a detailed AST.
+// @usage cogeni.read_ast(source, language)
+// @param source string|table File path or handle.
+// @param language string The grammar name (e.g. "go", "python").
+// @returns table The AST table.
+// </lua_api>
 func (rt *LuaRuntime) cogeniReadAST(L *lua.LState) int {
 	firstArg := L.CheckAny(1)
 	lang := L.CheckString(2)
@@ -102,6 +101,16 @@ func (rt *LuaRuntime) cogeniReadAST(L *lua.LState) int {
 
 // cogeniRegisterGrammar registers a custom grammar source URL.
 // Lua usage: cogeni.register_grammar("name", "url", { branch = "...", build_cmd = "..." })
+//
+// <lua_api>
+// @module cogeni
+// @function register_grammar
+// @summary Registers a custom grammar source URL.
+// @usage cogeni.register_grammar(name, url, opts)
+// @param name string The grammar name.
+// @param url string The git repository URL.
+// @param opts table Options (branch, build_cmd, artifact).
+// </lua_api>
 func (rt *LuaRuntime) cogeniRegisterGrammar(L *lua.LState) int {
 	name := L.CheckString(1)
 	url := L.CheckString(2)
@@ -131,6 +140,15 @@ func (rt *LuaRuntime) cogeniRegisterGrammar(L *lua.LState) int {
 
 // cogeniGetGrammar looks up a grammar name by file extension.
 // Lua usage: grammar = cogeni.get_grammar(".py")
+//
+// <lua_api>
+// @module cogeni
+// @function get_grammar
+// @summary Looks up a grammar name by file extension.
+// @usage cogeni.get_grammar(ext)
+// @param ext string The file extension (including dot).
+// @returns string The grammar name.
+// </lua_api>
 func (rt *LuaRuntime) cogeniGetGrammar(L *lua.LState) int {
 	ext := L.CheckString(1)
 	grammar := rt.cfg.GetGrammarForExtension(ext)

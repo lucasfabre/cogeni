@@ -7,6 +7,16 @@ import (
 
 // xmlEncode encodes a Lua value to an XML string.
 // Lua usage: str = xml.encode(data, { root = "root_name" })
+//
+// <lua_api>
+// @module xml
+// @function encode
+// @summary Encodes a Lua value to an XML string.
+// @usage xml.encode(data, options)
+// @param data any The Lua value to encode.
+// @param options table|nil Optional formatting options (e.g. {root="root_name"}).
+// @returns string The XML string.
+// </lua_api>
 func (rt *LuaRuntime) xmlEncode(L *lua.LState) int {
 	lv := L.CheckAny(1)
 	goValue := luaValueToGoValue(lv)
@@ -47,6 +57,15 @@ func (rt *LuaRuntime) xmlEncode(L *lua.LState) int {
 
 // xmlDecode decodes an XML string into a Lua table.
 // Lua usage: data = xml.decode(str)
+//
+// <lua_api>
+// @module xml
+// @function decode
+// @summary Decodes an XML string into a Lua table.
+// @usage xml.decode(str)
+// @param str string The XML string to decode.
+// @returns any The decoded Lua value.
+// </lua_api>
 func (rt *LuaRuntime) xmlDecode(L *lua.LState) int {
 	xmlStr := L.CheckString(1)
 

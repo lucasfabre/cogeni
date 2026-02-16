@@ -10,69 +10,353 @@ Absolute path to the currently executing Lua script.
 .TP
 .B _FILE_EXTENSION
 Extension of the currently executing script (including the dot).
+
 .SH GLOBAL FUNCTIONS
 .TP
-.B write(id, content)
-Buffers text for a specific output block. By default, targets \fB<generated id="ID">\fR in the current file.
-.TP
 .B async(fn, ...)
-Starts a new asynchronous task (coroutine). Returns a job handle.
+Starts a new asynchronous task.
+.IP
+\fBParameters:\fR
+.RS
+\fIfn\fR (function): The function to run asynchronously.
+.br
+\fI...\fR (any): Arguments to pass to the function.
+.br
+.RE
+.IP
+\fBReturns:\fR
+.RS
+userdata A job handle.
+.RE
 .TP
-.B await(job_handle)
-Pauses the current task until the specified job completes.
+.B await(job)
+Pauses until a job completes.
+.IP
+\fBParameters:\fR
+.RS
+\fIjob\fR (userdata): The job handle to wait for.
+.br
+.RE
+.IP
+\fBReturns:\fR
+.RS
+... any The results of the async function.
+.RE
 .TP
 .B sleep(seconds)
-Asynchronously pauses the task for the given duration. Must be used with \fBawait\fR.
+Pauses execution for a duration.
+.IP
+\fBParameters:\fR
+.RS
+\fIseconds\fR (number): The number of seconds to sleep.
+.br
+.RE
+.TP
+.B write(id, content)
+Buffers text for a specific output block.
+.IP
+\fBParameters:\fR
+.RS
+\fIid\fR (string): The block ID.
+.br
+\fIcontent\fR (string): The content to write.
+.br
+.RE
 .SH MODULES
 .SS cogeni
 .TP
-.B read_ast(path|handle, lang)
-Parses source into an AST table. If \fIpath\fR is relative, it resolves against \fB_CURRENT_FILE\fR. Automatically waits for files being updated by other tasks.
+.B cogeni.get_grammar(ext)
+Looks up a grammar name by file extension.
+.IP
+\fBParameters:\fR
+.RS
+\fIext\fR (string): The file extension (including dot).
+.br
+.RE
+.IP
+\fBReturns:\fR
+.RS
+string The grammar name.
+.RE
 .TP
-.B process(path)
-Triggers the full generation cycle on another file. Enables recursive orchestration.
+.B cogeni.outfile(id, path)
+Redirects write(id) to a file.
+.IP
+\fBParameters:\fR
+.RS
+\fIid\fR (string): The block ID.
+.br
+\fIpath\fR (string): The file path to overwrite.
+.br
+.RE
 .TP
-.B get_grammar(ext)
-Resolves grammar name from extension using the system configuration.
+.B cogeni.outtag(id, path, tag)
+Redirects write(id) to a specific tag in a file.
+.IP
+\fBParameters:\fR
+.RS
+\fIid\fR (string): The block ID.
+.br
+\fIpath\fR (string): The file path.
+.br
+\fItag\fR (string): The tag in the file.
+.br
+.RE
 .TP
-.B register_grammar(name, url, opts)
-Registers a custom grammar source for the current session.
+.B cogeni.process(path)
+Triggers the generation lifecycle for a file.
+.IP
+\fBParameters:\fR
+.RS
+\fIpath\fR (string): The file path.
+.br
+.RE
+.IP
+\fBReturns:\fR
+.RS
+boolean True on success.
+.RE
 .TP
-.B outfile(id, path)
-Redirects \fBwrite(id, ...)\fR to overwrite the \fBentire file\fR at \fIpath\fR.
+.B cogeni.read_ast(source, language)
+Parses source code into a detailed AST.
+.IP
+\fBParameters:\fR
+.RS
+\fIsource\fR (string|table): File path or handle.
+.br
+\fIlanguage\fR (string): The grammar name (e.g. "go", "python").
+.br
+.RE
+.IP
+\fBReturns:\fR
+.RS
+table The AST table.
+.RE
 .TP
-.B outtag(id, path, tag)
-Redirects \fBwrite(id, ...)\fR to a specific \fItag\fR in \fIpath\fR.
+.B cogeni.register_grammar(name, url, opts)
+Registers a custom grammar source URL.
+.IP
+\fBParameters:\fR
+.RS
+\fIname\fR (string): The grammar name.
+.br
+\fIurl\fR (string): The git repository URL.
+.br
+\fIopts\fR (table): Options (branch, build_cmd, artifact).
+.br
+.RE
 .SS fs
 .TP
-.B find(dir, opts)
-Recursively finds files. \fIopts\fR is a table: \fB{ type = "f"|"d", name = "glob", maxdepth = N }\fR.
+.B fs.basedir(path)
+Returns the directory of a path.
+.IP
+\fBParameters:\fR
+.RS
+\fIpath\fR (string): The file path.
+.br
+.RE
+.IP
+\fBReturns:\fR
+.RS
+string The directory part of the path.
+.RE
 .TP
-.B basedir(path), basename(path), join(...)
-Standard path utilities (directory name, file name, and joining).
-.SS jq / json
+.B fs.basename(path)
+Returns the last element of a path.
+.IP
+\fBParameters:\fR
+.RS
+\fIpath\fR (string): The file path.
+.br
+.RE
+.IP
+\fBReturns:\fR
+.RS
+string The file name.
+.RE
+.TP
+.B fs.find(dir, options)
+Recursively finds files and directories.
+.IP
+\fBParameters:\fR
+.RS
+\fIdir\fR (string): The starting directory.
+.br
+\fIoptions\fR (table): Filters (type="f"|"d", name="glob", maxdepth=N).
+.br
+.RE
+.IP
+\fBReturns:\fR
+.RS
+table A table where keys are paths and values are 'true'.
+.RE
+.TP
+.B fs.join(...)
+Joins multiple path elements.
+.IP
+\fBParameters:\fR
+.RS
+\fI...\fR (string): Path elements to join.
+.br
+.RE
+.IP
+\fBReturns:\fR
+.RS
+string The joined path.
+.RE
+.SS jq
 .TP
 .B jq.query(val, query)
-Executes a JQ query against any Lua value (usually an AST table). Returns a single value or a table of values.
+Executes a JQ query against a Lua value.
+.IP
+\fBParameters:\fR
+.RS
+\fIval\fR (any): The value to query (usually an AST table).
+.br
+\fIquery\fR (string): The JQ query string.
+.br
+.RE
+.IP
+\fBReturns:\fR
+.RS
+any|table A single result or a table of results, or nil.
+.RE
+.SS json
 .TP
-.B json.encode(val), json.decode(str)
-Standard JSON serialization.
+.B json.decode(str)
+Decodes a JSON string into a Lua table.
+.IP
+\fBParameters:\fR
+.RS
+\fIstr\fR (string): The JSON string.
+.br
+.RE
+.IP
+\fBReturns:\fR
+.RS
+any The decoded Lua value.
+.RE
+.TP
+.B json.encode(val, options)
+Encodes a Lua value to a JSON string.
+.IP
+\fBParameters:\fR
+.RS
+\fIval\fR (any): The value to encode.
+.br
+\fIoptions\fR (table): Optional formatting options (e.g. {indent=true}).
+.br
+.RE
+.IP
+\fBReturns:\fR
+.RS
+string The JSON string.
+.RE
+.SS toml
+.TP
+.B toml.decode(str)
+Decodes a TOML string into a Lua table.
+.IP
+\fBParameters:\fR
+.RS
+\fIstr\fR (string): The TOML string to decode.
+.br
+.RE
+.IP
+\fBReturns:\fR
+.RS
+any The decoded Lua value.
+.RE
+.TP
+.B toml.encode(data)
+Encodes a Lua value to a TOML string.
+.IP
+\fBParameters:\fR
+.RS
+\fIdata\fR (any): The Lua value to encode.
+.br
+.RE
+.IP
+\fBReturns:\fR
+.RS
+string The TOML string.
+.RE
+.SS xml
+.TP
+.B xml.decode(str)
+Decodes an XML string into a Lua table.
+.IP
+\fBParameters:\fR
+.RS
+\fIstr\fR (string): The XML string to decode.
+.br
+.RE
+.IP
+\fBReturns:\fR
+.RS
+any The decoded Lua value.
+.RE
+.TP
+.B xml.encode(data, options)
+Encodes a Lua value to an XML string.
+.IP
+\fBParameters:\fR
+.RS
+\fIdata\fR (any): The Lua value to encode.
+.br
+\fIoptions\fR (table|nil): Optional formatting options (e.g. {root="root_name"}).
+.br
+.RE
+.IP
+\fBReturns:\fR
+.RS
+string The XML string.
+.RE
+.SS yaml
+.TP
+.B yaml.decode(str)
+Decodes a YAML string into a Lua table.
+.IP
+\fBParameters:\fR
+.RS
+\fIstr\fR (string): The YAML string to decode.
+.br
+.RE
+.IP
+\fBReturns:\fR
+.RS
+any The decoded Lua value (table, string, number, etc).
+.RE
+.TP
+.B yaml.encode(data)
+Encodes a Lua value to a YAML string.
+.IP
+\fBParameters:\fR
+.RS
+\fIdata\fR (any): The Lua value to encode.
+.br
+.RE
+.IP
+\fBReturns:\fR
+.RS
+string The YAML string.
+.RE
 .SH EXAMPLES
 .SS 1. Basic Generation
 .nf
-# <cogeni>
-#   write("hello", "print('hello world')")
-# </cogeni>
-# <generated by="cogeni" id="hello">
-# </cogeni>
+    # <cogeni>
+    #   write("hello", "print('hello world')")
+    # </cogeni>
+    # <generated by="cogeni" id="hello">
+    # </cogeni>
 .fi
 .SS 2. Multi-file Orchestration
 .nf
--- cogeni.lua
-local files = fs.find(".", { type = "f", name = "*.py" })
-for path, _ in pairs(files) do
-    async(cogeni.process, path)
-end
+    -- cogeni.lua
+    local files = fs.find(".", { type = "f", name = "*.py" })
+    for path, _ in pairs(files) do
+        async(cogeni.process, path)
+    end
 .fi
 .SH AST TABLE SCHEMA
 Every node in the AST is a table:

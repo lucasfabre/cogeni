@@ -9,14 +9,14 @@ import (
 // cogeniProcess triggers the generation lifecycle for a specific file.
 // It is exposed to Lua as cogeni.process(path).
 //
-// path: The filesystem path of the file to process. If relative, it is resolved
-// against the directory of the current script.
-//
-// This function allows for recursive and multi-file orchestration. It invokes
-// the coordinator's processing logic, which may run the target file's own
-// <cogeni> blocks if they exist.
-//
-// Returns: true on success, or (nil, error_string) on failure.
+// <lua_api>
+// @module cogeni
+// @function process
+// @summary Triggers the generation lifecycle for a file.
+// @usage cogeni.process(path)
+// @param path string The file path.
+// @returns boolean True on success.
+// </lua_api>
 func (rt *LuaRuntime) cogeniProcess(L *lua.LState) int {
 	path := L.CheckString(1)
 	if rt.ProcessFunc == nil {
