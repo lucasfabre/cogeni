@@ -16,41 +16,27 @@ import (
 
 // Coordinator manages the parallel execution of code generation tasks.
 // It ensures that files are processed only once per execution run and
-// handles inter-file dependencies automatically when one file's generation
-// script reads another file that is also being generated.
+// handles inter-file dependencies automatically.
 type Coordinator struct {
-	// cfg is the global application configuration.
-	cfg *config.Config
-	// tasks tracks all files being processed. Key is absolute path.
-	tasks sync.Map // map[string]*Task
-	// wg is used to wait for all concurrent worker goroutines to finish.
-	wg sync.WaitGroup
-	// CleanMode, if true, indicates that blocks should be emptied instead of generated.
+	cfg       *config.Config
+	tasks     sync.Map // map[string]*Task
+	wg        sync.WaitGroup
 	CleanMode bool
 
-	// Results maps absolute file paths to their pending content changes.
-	// This buffer allows cogeni to handle recursive updates and preview changes (diff)
-	// without actually touching the disk until Commit() is called.
+	// Results buffers content changes to handle recursive updates and preview changes.
 	Results sync.Map // map[string]string
 
-	// runtimePool manages reusable LuaRuntime instances to avoid overhead.
 	runtimePool *RuntimePool
 
-	// fileCache caches original file contents to avoid repeated disk I/O.
-	// Key is absolute file path, value is the file content as bytes.
 	fileCache sync.Map // map[string][]byte
 }
 
 // Task represents the processing state of a single file.
 type Task struct {
-	// path is the absolute path of the file being processed.
-	path string
-	// done is closed when the file processing is finished.
-	done chan struct{}
-	// dependencies lists absolute paths of files this task has read during its execution.
+	path         string
+	done         chan struct{}
 	dependencies []string
-	// mu protects the dependencies slice.
-	mu sync.Mutex
+	mu           sync.Mutex
 }
 
 // addDependency records that this task depends on the content of another file.
@@ -60,7 +46,7 @@ func (t *Task) addDependency(path string) {
 	t.dependencies = append(t.dependencies, path)
 }
 
-// NewCoordinator creates a new orchestrator instance.
+// NewCoordinator creates a new Coordinator.
 func NewCoordinator(cfg *config.Config) *Coordinator {
 	return &Coordinator{
 		cfg:         cfg,
@@ -69,7 +55,6 @@ func NewCoordinator(cfg *config.Config) *Coordinator {
 }
 
 // RegisterTask manually registers a file to be tracked by the coordinator.
-// This is useful for entry point scripts that might not be processed via Process().
 func (c *Coordinator) RegisterTask(path string) {
 	absPath, _ := filepath.Abs(path)
 	c.tasks.LoadOrStore(absPath, &Task{
@@ -95,7 +80,6 @@ func (c *Coordinator) FinishTask(path string) {
 
 // Process initiates the code generation process for a file.
 // If the file is already being processed by another goroutine, it waits for it to complete.
-// requestor is the absolute path of the file whose script triggered this process call.
 func (c *Coordinator) Process(path string, requestor string) error {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
@@ -137,7 +121,6 @@ func (c *Coordinator) Process(path string, requestor string) error {
 // Wait blocks until all registered and spawned tasks have completed.
 func (c *Coordinator) Wait() {
 	c.wg.Wait()
-	// Close the runtime pool to free resources
 	c.runtimePool.Close()
 }
 

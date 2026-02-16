@@ -48,8 +48,7 @@ type LuaRuntime struct {
 	ReadFunc func(string) (string, bool)
 }
 
-// New initializes a LuaRuntime, registers all custom modules (cogeni, fs, json, jq),
-// and prepares the AST parser.
+// New initializes a LuaRuntime.
 //
 // <lua_api>
 // @module global
@@ -109,10 +108,8 @@ func New(cfg *config.Config) (*LuaRuntime, error) {
 	rt.registerJQModule()
 	rt.registerFSModule()
 
-	// Initialize the glua-async module to enable async() and await() in Lua.
 	async.Init(rt.L)
 
-	// Register a global 'sleep(seconds)' function that yields to the async scheduler.
 	rt.L.SetGlobal("sleep", rt.L.NewFunction(func(L *lua.LState) int {
 		sec := L.CheckNumber(1)
 		async.AsyncRun(func() []lua.LValue {
@@ -122,7 +119,6 @@ func New(cfg *config.Config) (*LuaRuntime, error) {
 		return 0
 	}))
 
-	// Register all grammars defined in the configuration.
 	for name, src := range cfg.Grammar.Sources {
 		rt.parser.RegisterGrammar(name, src.URL, astparser.GrammarOptions{
 			Branch:   src.Branch,
@@ -131,9 +127,6 @@ func New(cfg *config.Config) (*LuaRuntime, error) {
 		})
 	}
 
-	// Register the global 'write(id, content)' function.
-	// By default, 'write' targets a <generated id="[id]"> block in the current file.
-	// Its destination can be overridden using cogeni.outfile() or cogeni.outtag().
 	rt.L.SetGlobal("write", rt.L.NewFunction(func(L *lua.LState) int {
 		id := L.CheckString(1)
 		content := L.CheckString(2)
@@ -150,25 +143,20 @@ func (rt *LuaRuntime) Close() {
 }
 
 // Reset clears the runtime state for reuse in a pool.
-// This resets output buffers and global variables without closing the Lua state.
 func (rt *LuaRuntime) Reset() {
-	// Clear output buffers
 	rt.Output = make(map[string]string)
 	rt.OutputTargets = make(map[string]OutputTarget)
 
-	// Reset global variables
 	rt.L.SetGlobal("_CURRENT_FILE", lua.LNil)
 	rt.L.SetGlobal("_FILE_EXTENSION", lua.LNil)
 }
 
 // Schedule triggers the execution of pending async tasks.
-// This should be called after executing the main script if it uses async functions.
 func (rt *LuaRuntime) Schedule() {
 	async.Schedule(rt.L)
 }
 
 // ExecuteFile loads and runs a Lua script from the filesystem.
-// It sets the global variables _CURRENT_FILE and _FILE_EXTENSION.
 func (rt *LuaRuntime) ExecuteFile(filePath string) error {
 	absPath, _ := filepath.Abs(filePath)
 	rt.L.SetGlobal("_CURRENT_FILE", lua.LString(absPath))
@@ -214,7 +202,6 @@ func (rt *LuaRuntime) REPL() error {
 }
 
 // registerCogeniModule exposes the 'cogeni' table to Lua.
-// Methods: read_ast, register_grammar, get_grammar, process, outfile, outtag.
 //
 // <lua_api>
 // @module cogeni
@@ -241,7 +228,6 @@ func (rt *LuaRuntime) registerCogeniModule() {
 	rt.L.SetField(cogeniTable, "get_grammar", rt.L.NewFunction(rt.cogeniGetGrammar))
 	rt.L.SetField(cogeniTable, "process", rt.L.NewFunction(rt.cogeniProcess))
 
-	// cogeni.outfile(id, path): Redirects all writes for 'id' to overwrite 'path'.
 	rt.L.SetField(cogeniTable, "outfile", rt.L.NewFunction(func(L *lua.LState) int {
 		id := L.CheckString(1)
 		path := L.CheckString(2)
@@ -249,7 +235,6 @@ func (rt *LuaRuntime) registerCogeniModule() {
 		return 0
 	}))
 
-	// cogeni.outtag(id, path, tag): Redirects writes for 'id' to a specific tag in 'path'.
 	rt.L.SetField(cogeniTable, "outtag", rt.L.NewFunction(func(L *lua.LState) int {
 		id := L.CheckString(1)
 		path := L.CheckString(2)
@@ -261,7 +246,6 @@ func (rt *LuaRuntime) registerCogeniModule() {
 }
 
 // registerFSModule exposes the 'fs' table to Lua for filesystem utilities.
-// Methods: find, basedir, basename, join.
 func (rt *LuaRuntime) registerFSModule() {
 	fsTable := rt.L.CreateTable(0, 4)
 	rt.L.SetField(fsTable, "find", rt.L.NewFunction(rt.fsFind))
