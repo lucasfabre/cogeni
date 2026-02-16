@@ -67,6 +67,9 @@ func New(cfg *config.Config) (*LuaRuntime, error) {
 	rt.L.OpenLibs()
 	rt.registerCogeniModule()
 	rt.registerJSONModule()
+	rt.registerYAMLModule()
+	rt.registerTOMLModule()
+	rt.registerXMLModule()
 	rt.registerJQModule()
 	rt.registerFSModule()
 
@@ -226,4 +229,28 @@ func (rt *LuaRuntime) registerJQModule() {
 	jqTable := rt.L.CreateTable(0, 1)
 	rt.L.SetField(jqTable, "query", rt.L.NewFunction(rt.jqQuery))
 	rt.L.SetGlobal("jq", jqTable)
+}
+
+// registerYAMLModule exposes the 'yaml' table to Lua for YAML serialization.
+func (rt *LuaRuntime) registerYAMLModule() {
+	yamlTable := rt.L.CreateTable(0, 2)
+	rt.L.SetField(yamlTable, "encode", rt.L.NewFunction(rt.yamlEncode))
+	rt.L.SetField(yamlTable, "decode", rt.L.NewFunction(rt.yamlDecode))
+	rt.L.SetGlobal("yaml", yamlTable)
+}
+
+// registerTOMLModule exposes the 'toml' table to Lua for TOML serialization.
+func (rt *LuaRuntime) registerTOMLModule() {
+	tomlTable := rt.L.CreateTable(0, 2)
+	rt.L.SetField(tomlTable, "encode", rt.L.NewFunction(rt.tomlEncode))
+	rt.L.SetField(tomlTable, "decode", rt.L.NewFunction(rt.tomlDecode))
+	rt.L.SetGlobal("toml", tomlTable)
+}
+
+// registerXMLModule exposes the 'xml' table to Lua for XML serialization.
+func (rt *LuaRuntime) registerXMLModule() {
+	xmlTable := rt.L.CreateTable(0, 2)
+	rt.L.SetField(xmlTable, "encode", rt.L.NewFunction(rt.xmlEncode))
+	rt.L.SetField(xmlTable, "decode", rt.L.NewFunction(rt.xmlDecode))
+	rt.L.SetGlobal("xml", xmlTable)
 }

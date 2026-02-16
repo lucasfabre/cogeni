@@ -1,5 +1,7 @@
 github.com/CuberL/glua-async v0.0.0-20190614102843-43f22221106d h1:lGZoWyUkx8m8e0LsP9hSv0zcK/f5ffJEEYo+B0RIJFM=
 github.com/CuberL/glua-async v0.0.0-20190614102843-43f22221106d/go.mod h1:9LzvPuiPyVXXFvHZCKOCvXxy1KkFADRmePZJDFuuFgE=
+github.com/clbanning/mxj/v2 v2.7.0 h1:WA/La7UGCanFe5NpHF0Q3DNtnCsVoxbPKuyBNHWRyME=
+github.com/clbanning/mxj/v2 v2.7.0/go.mod h1:hNiWqW14h+kc+MdF9C6/YoRfjEJoR3ou6tn/Qo+ve2s=
 github.com/cpuguy83/go-md2man/v2 v2.0.6/go.mod h1:oOW0eioCTA6cOiMLiUPZOpcVxMig6NIQQ7OS05n1F4g=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

@@ -4,14 +4,17 @@ go 1.25.0
 
 require (
 	github.com/CuberL/glua-async v0.0.0-20190614102843-43f22221106d
+	github.com/clbanning/mxj/v2 v2.7.0
 	github.com/ebitengine/purego v0.9.1
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/itchyny/gojq v0.12.18
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/tree-sitter/go-tree-sitter v0.25.0
 	github.com/yuin/gopher-lua v1.1.1
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -19,7 +22,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/itchyny/timefmt-go v0.1.7 // indirect
 	github.com/mattn/go-pointer v0.0.1 // indirect
-	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/sagikazarmark/locafero v0.11.0 // indirect
 	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
