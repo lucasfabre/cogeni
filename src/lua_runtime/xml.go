@@ -2,43 +2,40 @@ package luaruntime
 
 import (
 	"github.com/clbanning/mxj/v2"
-	lua "github.com/yuin/gopher-lua"
+	"github.com/lucasfabre/codegen/src/lua_runtime/luajit"
 )
 
 // xmlEncode encodes a Lua value to an XML string.
-// Lua usage: str = xml.encode(data, { root = "root_name" })
+// Lua usage: str = xml.encode(data, { root = "myroot" })
 //
 // <lua_api>
 // @module xml
 // @function encode
 // @summary Encodes a Lua value to an XML string.
-// @usage xml.encode(data, options)
-// @param data any The Lua value to encode.
-// @param options table|nil Optional formatting options (e.g. {root="root_name"}).
+// @usage xml.encode(val, options)
+// @param val any The value to encode.
+// @param options table Optional formatting options (e.g. {root="root"}).
 // @returns string The XML string.
 // </lua_api>
-func (rt *LuaRuntime) xmlEncode(L *lua.LState) int {
-	lv := L.CheckAny(1)
-	goValue := luaValueToGoValue(lv)
+func (rt *LuaRuntime) xmlEncode(L *luajit.State) int {
+	goValue := ToGoValue(L, 1)
 
 	rootName := "root"
-	if L.GetTop() >= 2 {
-		options := L.CheckTable(2)
-		if v := options.RawGetString("root"); v != lua.LNil {
-			rootName = v.String()
+	if L.GetTop() >= 2 && L.IsTable(2) {
+		L.GetField(2, "root")
+		if L.IsString(-1) {
+			rootName = L.ToString(-1)
 		}
+		L.Pop(1)
 	}
 
-	// Ensure input is a map for mxj
 	m, ok := goValue.(map[string]interface{})
 	if !ok {
-		// If it's not a map (e.g. a list or primitive), wrap it
 		m = map[string]interface{}{
 			"#text": goValue,
 		}
 	}
 
-	// Wrap in root element
 	wrapper := map[string]interface{}{
 		rootName: m,
 	}
@@ -46,36 +43,36 @@ func (rt *LuaRuntime) xmlEncode(L *lua.LState) int {
 	mv := mxj.Map(wrapper)
 	xmlData, err := mv.XmlIndent("", "  ")
 	if err != nil {
-		L.Push(lua.LNil)
-		L.Push(lua.LString(err.Error()))
+		L.PushNil()
+		L.PushString(err.Error())
 		return 2
 	}
 
-	L.Push(lua.LString(string(xmlData)))
+	L.PushString(string(xmlData))
 	return 1
 }
 
 // xmlDecode decodes an XML string into a Lua table.
-// Lua usage: data = xml.decode(str)
+// Lua usage: data = xml.decode('<root>foo</root>')
 //
 // <lua_api>
 // @module xml
 // @function decode
 // @summary Decodes an XML string into a Lua table.
 // @usage xml.decode(str)
-// @param str string The XML string to decode.
+// @param str string The XML string.
 // @returns any The decoded Lua value.
 // </lua_api>
-func (rt *LuaRuntime) xmlDecode(L *lua.LState) int {
+func (rt *LuaRuntime) xmlDecode(L *luajit.State) int {
 	xmlStr := L.CheckString(1)
 
 	mv, err := mxj.NewMapXml([]byte(xmlStr))
 	if err != nil {
-		L.Push(lua.LNil)
-		L.Push(lua.LString(err.Error()))
+		L.PushNil()
+		L.PushString(err.Error())
 		return 2
 	}
 
-	L.Push(goValueToLuaValue(L, map[string]interface{}(mv)))
+	PushGoValue(L, map[string]interface{}(mv))
 	return 1
 }

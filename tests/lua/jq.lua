@@ -38,4 +38,16 @@ T.describe("jq integration", function()
 		local names = jq.query(ast, query)
 		T.assert_eq(names, { "User", "Product", "Todo" }, "failed to query interface names")
 	end)
+
+	T.it("should return single value unwrapped", function()
+		local data = { users = { { name = "Alice" } } }
+		local res = jq.query(data, ".users[0].name")
+		T.assert_eq(res, "Alice", "Single result should be a value")
+	end)
+
+	T.it("should return nil for empty result", function()
+		local data = { users = { { name = "Alice" } } }
+		local res = jq.query(data, ".users[] | select(.name == 'Bob')")
+		T.assert_eq(res, nil, "No results should be nil")
+	end)
 end)

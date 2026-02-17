@@ -15,7 +15,6 @@ import (
 	luaruntime "github.com/lucasfabre/codegen/src/lua_runtime"
 	"github.com/lucasfabre/codegen/src/processor"
 	"github.com/spf13/cobra"
-	lua "github.com/yuin/gopher-lua"
 )
 
 var watchCmd = &cobra.Command{
@@ -126,7 +125,8 @@ var watchCmd = &cobra.Command{
 				}
 			} else {
 				// Set dummy current file for dependency tracking
-				rt.L.SetGlobal("_CURRENT_FILE", lua.LString(entryPath))
+				rt.L.PushString(entryPath)
+				rt.L.SetGlobal("_CURRENT_FILE")
 				if err := rt.DoString(entryScript); err != nil {
 					fmt.Printf("Error executing script: %v\n", err)
 					return nil

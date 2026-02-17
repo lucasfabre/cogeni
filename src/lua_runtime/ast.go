@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/lucasfabre/codegen/src/astparser"
-	lua "github.com/yuin/gopher-lua"
+	"github.com/lucasfabre/codegen/src/lua_runtime/luajit"
 )
 
 // cogeniReadAST parses source code into a detailed AST.
@@ -21,32 +21,34 @@ import (
 // @param language string The grammar name (e.g. "go", "python").
 // @returns table The AST table.
 // </lua_api>
-func (rt *LuaRuntime) cogeniReadAST(L *lua.LState) int {
-	firstArg := L.CheckAny(1)
+func (rt *LuaRuntime) cogeniReadAST(L *luajit.State) int {
+	firstArg := ToGoValue(L, 1)
 	lang := L.CheckString(2)
 
 	var source []byte
 	var err error
 
-	if firstArg.Type() == lua.LTString {
+	if path, ok := firstArg.(string); ok {
 		// Case 2: It's a path string
-		path := firstArg.String()
-		currentFile := rt.L.GetGlobal("_CURRENT_FILE").String()
+		L.GetGlobal("_CURRENT_FILE")
+		currentFile := ""
+		if L.IsString(-1) {
+			currentFile = L.ToString(-1)
+		}
+		L.Pop(1)
 
-		// Resolve path relative to current file if it is relative
-		if !filepath.IsAbs(path) && currentFile != "nil" && currentFile != "" {
+		if !filepath.IsAbs(path) && currentFile != "" && currentFile != "nil" {
 			path = filepath.Join(filepath.Dir(currentFile), path)
 		}
 
 		if rt.WaitFunc != nil {
 			if err := rt.WaitFunc(path, currentFile); err != nil {
-				L.Push(lua.LNil)
-				L.Push(lua.LString(fmt.Sprintf("dependency error for '%s': %v", path, err)))
+				L.PushNil()
+				L.PushString(fmt.Sprintf("dependency error for '%s': %v", path, err))
 				return 2
 			}
 		}
 
-		// Try reading from buffer first
 		if rt.ReadFunc != nil {
 			if content, ok := rt.ReadFunc(path); ok {
 				source = []byte(content)
@@ -56,46 +58,46 @@ func (rt *LuaRuntime) cogeniReadAST(L *lua.LState) int {
 		if source == nil {
 			source, err = os.ReadFile(path)
 			if err != nil {
-				L.Push(lua.LNil)
-				L.Push(lua.LString(fmt.Sprintf("failed to read file '%s': %v", firstArg.String(), err)))
+				L.PushNil()
+				L.PushString(fmt.Sprintf("failed to read file '%s': %v", firstArg.(string), err))
 				return 2
 			}
 		}
 	} else {
 		// Case 1: Assume it's an object with a 'read' method
-		readFunc := L.GetField(firstArg, "read")
-		if readFunc.Type() != lua.LTFunction {
-			L.Push(lua.LNil)
-			L.Push(lua.LString(fmt.Sprintf("invalid first argument: expected string or object with 'read' method, got %s", firstArg.Type().String())))
+		if !L.IsTable(1) && !L.IsUserData(1) { // UserData might also have metatable
+			// Just check getfield
+		}
+
+		L.GetField(1, "read")
+		if !L.IsFunction(-1) {
+			L.PushNil()
+			L.PushString(fmt.Sprintf("invalid first argument: expected string or object with 'read' method"))
 			return 2
 		}
 
-		L.Push(readFunc)
-		L.Push(firstArg)
-		L.Push(lua.LString("*a"))
-		L.Call(2, 1)
+		L.PushValue(1)     // self
+		L.PushString("*a") // arg
+		L.Call(2, 1)       // Call read(self, "*a") -> 1 result
 
-		result := L.Get(-1)
-		L.Pop(1)
-
-		if result == lua.LNil {
-			L.Push(lua.LNil)
-			L.Push(lua.LString("failed to read from handle (returned nil)"))
+		// Result is at top
+		if L.IsNil(-1) {
+			L.PushNil()
+			L.PushString("failed to read from handle (returned nil)")
 			return 2
 		}
-		source = []byte(result.String())
+		source = []byte(L.ToString(-1))
+		L.Pop(1) // Pop result
 	}
 
 	ast, err := rt.parser.Parse(lang, source)
 	if err != nil {
-		L.Push(lua.LNil)
-		L.Push(lua.LString(fmt.Sprintf("parsing error: %v", err)))
+		L.PushNil()
+		L.PushString(fmt.Sprintf("parsing error: %v", err))
 		return 2
 	}
 
-	// Convert astparser.Node to Lua table
-	luaAST := rt.nodeToLuaTable(ast)
-	L.Push(luaAST)
+	rt.nodeToLuaTable(L, ast)
 	return 1
 }
 
@@ -111,27 +113,29 @@ func (rt *LuaRuntime) cogeniReadAST(L *lua.LState) int {
 // @param url string The git repository URL.
 // @param opts table Options (branch, build_cmd, artifact).
 // </lua_api>
-func (rt *LuaRuntime) cogeniRegisterGrammar(L *lua.LState) int {
+func (rt *LuaRuntime) cogeniRegisterGrammar(L *luajit.State) int {
 	name := L.CheckString(1)
 	url := L.CheckString(2)
-	optsTable := L.ToTable(3)
 
 	opts := astparser.GrammarOptions{}
-	if optsTable != nil {
-		opts.BuildCmd = L.GetField(optsTable, "build_cmd").String()
-		opts.Artifact = L.GetField(optsTable, "artifact").String()
-		opts.Branch = L.GetField(optsTable, "branch").String()
+	if L.GetTop() >= 3 && L.IsTable(3) {
+		L.GetField(3, "build_cmd")
+		if L.IsString(-1) {
+			opts.BuildCmd = L.ToString(-1)
+		}
+		L.Pop(1)
 
-		// gopher-lua .String() returns "nil" if the field is absent and we didn't check type
-		if L.GetField(optsTable, "build_cmd").Type() == lua.LTNil {
-			opts.BuildCmd = ""
+		L.GetField(3, "artifact")
+		if L.IsString(-1) {
+			opts.Artifact = L.ToString(-1)
 		}
-		if L.GetField(optsTable, "artifact").Type() == lua.LTNil {
-			opts.Artifact = ""
+		L.Pop(1)
+
+		L.GetField(3, "branch")
+		if L.IsString(-1) {
+			opts.Branch = L.ToString(-1)
 		}
-		if L.GetField(optsTable, "branch").Type() == lua.LTNil {
-			opts.Branch = ""
-		}
+		L.Pop(1)
 	}
 
 	rt.parser.RegisterGrammar(name, url, opts)
@@ -149,78 +153,105 @@ func (rt *LuaRuntime) cogeniRegisterGrammar(L *lua.LState) int {
 // @param ext string The file extension (including dot).
 // @returns string The grammar name.
 // </lua_api>
-func (rt *LuaRuntime) cogeniGetGrammar(L *lua.LState) int {
+func (rt *LuaRuntime) cogeniGetGrammar(L *luajit.State) int {
 	ext := L.CheckString(1)
 	grammar := rt.cfg.GetGrammarForExtension(ext)
-	L.Push(lua.LString(grammar))
+	L.PushString(grammar)
 	return 1
 }
 
-// nodeToLuaTable recursively converts an astparser.Node to a Lua table.
-// This table is what Lua scripts interact with when querying the AST.
-func (rt *LuaRuntime) nodeToLuaTable(node astparser.Node) *lua.LTable {
-	tbl := rt.L.CreateTable(0, 0)
+func (rt *LuaRuntime) nodeToLuaTable(L *luajit.State, node astparser.Node) {
+	L.CreateTable(0, 16) // Pre-allocate
+	tableIdx := L.GetTop()
 
-	tbl.RawSetString("id", lua.LNumber(node.Id))
-	tbl.RawSetString("type", lua.LString(node.Type))
-	tbl.RawSetString("kind_id", lua.LNumber(node.KindId))
-	tbl.RawSetString("grammar_id", lua.LNumber(node.GrammarId))
-	tbl.RawSetString("grammar_name", lua.LString(node.GrammarName))
+	L.PushNumber(float64(node.Id))
+	L.SetField(tableIdx, "id")
+
+	L.PushString(node.Type)
+	L.SetField(tableIdx, "type")
+
+	L.PushNumber(float64(node.KindId))
+	L.SetField(tableIdx, "kind_id")
+
+	L.PushNumber(float64(node.GrammarId))
+	L.SetField(tableIdx, "grammar_id")
+
+	L.PushString(node.GrammarName)
+	L.SetField(tableIdx, "grammar_name")
+
 	if node.Content != "" {
-		tbl.RawSetString("content", lua.LString(node.Content))
+		L.PushString(node.Content)
+		L.SetField(tableIdx, "content")
 	}
-	tbl.RawSetString("is_named", lua.LBool(node.IsNamed))
-	tbl.RawSetString("is_extra", lua.LBool(node.IsExtra))
-	tbl.RawSetString("has_error", lua.LBool(node.HasError))
-	tbl.RawSetString("is_error", lua.LBool(node.IsError))
-	tbl.RawSetString("is_missing", lua.LBool(node.IsMissing))
 
-	startPos := rt.L.CreateTable(2, 0)
-	startPos.Append(lua.LNumber(node.StartPos[0]))
-	startPos.Append(lua.LNumber(node.StartPos[1]))
-	tbl.RawSetString("start_pos", startPos)
+	L.PushBool(node.IsNamed)
+	L.SetField(tableIdx, "is_named")
 
-	endPos := rt.L.CreateTable(2, 0)
-	endPos.Append(lua.LNumber(node.EndPos[0]))
-	endPos.Append(lua.LNumber(node.EndPos[1]))
-	tbl.RawSetString("end_pos", endPos)
+	L.PushBool(node.IsExtra)
+	L.SetField(tableIdx, "is_extra")
+
+	L.PushBool(node.HasError)
+	L.SetField(tableIdx, "has_error")
+
+	L.PushBool(node.IsError)
+	L.SetField(tableIdx, "is_error")
+
+	L.PushBool(node.IsMissing)
+	L.SetField(tableIdx, "is_missing")
+
+	L.CreateTable(2, 0)
+	L.PushNumber(float64(node.StartPos[0]))
+	L.RawSetInt(-2, 1)
+	L.PushNumber(float64(node.StartPos[1]))
+	L.RawSetInt(-2, 2)
+	L.SetField(tableIdx, "start_pos")
+
+	L.CreateTable(2, 0)
+	L.PushNumber(float64(node.EndPos[0]))
+	L.RawSetInt(-2, 1)
+	L.PushNumber(float64(node.EndPos[1]))
+	L.RawSetInt(-2, 2)
+	L.SetField(tableIdx, "end_pos")
 
 	if len(node.Children) > 0 {
-		childrenTable := rt.L.CreateTable(len(node.Children), 0)
-		for _, child := range node.Children {
-			childrenTable.Append(rt.nodeToLuaTable(child))
+		L.CreateTable(len(node.Children), 0)
+		childrenIdx := L.GetTop()
+		for i, child := range node.Children {
+			rt.nodeToLuaTable(L, child)
+			L.RawSetInt(childrenIdx, i+1)
 		}
-		tbl.RawSetString("children", childrenTable)
+		L.SetField(tableIdx, "children")
 	}
 
 	if len(node.Fields) > 0 {
-		fieldsTable := rt.L.CreateTable(0, len(node.Fields))
+		L.CreateTable(0, len(node.Fields))
+		fieldsIdx := L.GetTop()
 		for key, val := range node.Fields {
-			fieldsTable.RawSetString(key, rt.convertASTValueToLua(val))
+			rt.convertASTValueToLua(L, val)
+			L.SetField(fieldsIdx, key)
 		}
-		tbl.RawSetString("fields", fieldsTable)
+		L.SetField(tableIdx, "fields")
 	}
-
-	return tbl
 }
 
-func (rt *LuaRuntime) convertASTValueToLua(val any) lua.LValue {
+func (rt *LuaRuntime) convertASTValueToLua(L *luajit.State, val any) {
 	switch v := val.(type) {
 	case astparser.Node:
-		return rt.nodeToLuaTable(v)
+		rt.nodeToLuaTable(L, v)
 	case []astparser.Node:
-		listTable := rt.L.CreateTable(len(v), 0)
-		for _, item := range v {
-			listTable.Append(rt.nodeToLuaTable(item))
+		L.CreateTable(len(v), 0)
+		listIdx := L.GetTop()
+		for i, item := range v {
+			rt.nodeToLuaTable(L, item)
+			L.RawSetInt(listIdx, i+1)
 		}
-		return listTable
 	case string:
-		return lua.LString(v)
+		L.PushString(v)
 	case float64:
-		return lua.LNumber(v)
+		L.PushNumber(v)
 	case bool:
-		return lua.LBool(v)
+		L.PushBool(v)
 	default:
-		return lua.LString(fmt.Sprintf("%v", v))
+		L.PushString(fmt.Sprintf("%v", v))
 	}
 }

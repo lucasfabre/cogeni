@@ -1,13 +1,11 @@
 package luaruntime
 
 import (
-	"fmt"
-
 	"github.com/itchyny/gojq"
-	lua "github.com/yuin/gopher-lua"
+	"github.com/lucasfabre/codegen/src/lua_runtime/luajit"
 )
 
-// jqQuery executes a JQ query against a Lua value (typically an AST table).
+// jqQuery runs a JQ query against a Lua value.
 // It is exposed to Lua as jq.query(data, query_string).
 //
 // <lua_api>
@@ -19,21 +17,20 @@ import (
 // @param query string The JQ query string.
 // @returns any|table A single result or a table of results, or nil.
 // </lua_api>
-func (rt *LuaRuntime) jqQuery(L *lua.LState) int {
-	value := L.CheckAny(1)
-	queryString := L.CheckString(2)
+func (rt *LuaRuntime) jqQuery(L *luajit.State) int {
+	goSource := ToGoValue(L, 1)
+	queryStr := L.CheckString(2)
 
-	goValue := luaValueToGoValue(value)
-
-	query, err := gojq.Parse(queryString)
+	query, err := gojq.Parse(queryStr)
 	if err != nil {
-		L.Push(lua.LNil)
-		L.Push(lua.LString(fmt.Sprintf("failed to parse jq query: %v", err)))
+		L.PushNil()
+		L.PushString(err.Error())
 		return 2
 	}
 
-	iter := query.Run(goValue)
-	var results []lua.LValue
+	iter := query.Run(goSource)
+
+	var results []interface{}
 
 	for {
 		v, ok := iter.Next()
@@ -41,28 +38,29 @@ func (rt *LuaRuntime) jqQuery(L *lua.LState) int {
 			break
 		}
 		if err, ok := v.(error); ok {
-			L.Push(lua.LNil)
-			L.Push(lua.LString(fmt.Sprintf("jq query error: %v", err)))
+			L.PushNil()
+			L.PushString(err.Error())
 			return 2
 		}
-		results = append(results, goValueToLuaValue(L, v))
+		results = append(results, v)
 	}
 
 	if len(results) == 0 {
-		L.Push(lua.LNil)
+		L.PushNil()
 		return 1
 	}
 
 	if len(results) == 1 {
-		L.Push(results[0])
+		PushGoValue(L, results[0])
 		return 1
 	}
 
-	// If multiple results, return as a table
-	tbl := L.CreateTable(len(results), 0)
-	for _, res := range results {
-		tbl.Append(res)
+	L.CreateTable(len(results), 0)
+	tableIdx := L.GetTop()
+	for i, res := range results {
+		PushGoValue(L, res)
+		L.RawSetInt(tableIdx, i+1)
 	}
-	L.Push(tbl)
+
 	return 1
 }

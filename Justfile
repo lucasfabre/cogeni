@@ -1,14 +1,17 @@
 # Justfile
 
 run args="":
-	go run ./src {{args}}
+	eval $(./scripts/detect_luajit.sh) && go run ./src {{args}}
 
 build:
-	go build -trimpath -ldflags="-s -w -buildid=" -o cogeni ./src
+	eval $(./scripts/detect_luajit.sh) && go build -trimpath -ldflags="-s -w -buildid=" -o cogeni ./src
+
+build-static:
+	eval $(./scripts/detect_luajit.sh true) && go build -trimpath -ldflags="-s -w -buildid=" -o cogeni ./src
 
 # Build optimized binary for current platform
 release:
-	go build -trimpath -ldflags="-s -w -buildid=" -o cogeni ./src
+	eval $(./scripts/detect_luajit.sh) && go build -trimpath -ldflags="-s -w -buildid=" -o cogeni ./src
 	mise exec -- upx --best --lzma cogeni || true
 
 # Build only Linux binaries using goreleaser-cross

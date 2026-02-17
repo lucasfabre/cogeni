@@ -3,7 +3,7 @@ package luaruntime
 import (
 	"encoding/json"
 
-	lua "github.com/yuin/gopher-lua"
+	"github.com/lucasfabre/codegen/src/lua_runtime/luajit"
 )
 
 // jsonEncode encodes a Lua value to a JSON string.
@@ -19,16 +19,17 @@ import (
 // @param options table Optional formatting options (e.g. {indent=true}).
 // @returns string The JSON string.
 // </lua_api>
-func (rt *LuaRuntime) jsonEncode(L *lua.LState) int {
-	lv := L.CheckAny(1)
-	goValue := luaValueToGoValue(lv)
+func (rt *LuaRuntime) jsonEncode(L *luajit.State) int {
+	goValue := ToGoValue(L, 1)
 
 	indent := ""
-	if L.GetTop() >= 2 {
-		options := L.CheckTable(2)
-		if options.RawGetString("indent") == lua.LTrue {
+	if L.GetTop() >= 2 && L.IsTable(2) {
+		// Check options table for {indent=true}
+		L.GetField(2, "indent")
+		if L.ToBoolean(-1) {
 			indent = "  "
 		}
+		L.Pop(1)
 	}
 
 	var jsonData []byte
@@ -41,12 +42,12 @@ func (rt *LuaRuntime) jsonEncode(L *lua.LState) int {
 	}
 
 	if err != nil {
-		L.Push(lua.LNil)
-		L.Push(lua.LString(err.Error()))
+		L.PushNil()
+		L.PushString(err.Error())
 		return 2
 	}
 
-	L.Push(lua.LString(string(jsonData)))
+	L.PushString(string(jsonData))
 	return 1
 }
 
@@ -61,16 +62,16 @@ func (rt *LuaRuntime) jsonEncode(L *lua.LState) int {
 // @param str string The JSON string.
 // @returns any The decoded Lua value.
 // </lua_api>
-func (rt *LuaRuntime) jsonDecode(L *lua.LState) int {
+func (rt *LuaRuntime) jsonDecode(L *luajit.State) int {
 	jsonStr := L.CheckString(1)
 
 	var goValue interface{}
 	if err := json.Unmarshal([]byte(jsonStr), &goValue); err != nil {
-		L.Push(lua.LNil)
-		L.Push(lua.LString(err.Error()))
+		L.PushNil()
+		L.PushString(err.Error())
 		return 2
 	}
 
-	L.Push(goValueToLuaValue(L, goValue))
+	PushGoValue(L, goValue)
 	return 1
 }

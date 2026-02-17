@@ -12,7 +12,6 @@ import (
 	"github.com/clbanning/mxj/v2"
 	"github.com/lucasfabre/codegen/src/config"
 	luaruntime "github.com/lucasfabre/codegen/src/lua_runtime"
-	lua "github.com/yuin/gopher-lua"
 )
 
 // ProcessFile executes the end-to-end generation lifecycle for a single file.
@@ -46,8 +45,10 @@ func ProcessFile(cfg *config.Config, filePath string, c *Coordinator) error {
 	}
 	rt.ReadFunc = c.GetResult
 
-	rt.L.SetGlobal("_CURRENT_FILE", lua.LString(absPath))
-	rt.L.SetGlobal("_FILE_EXTENSION", lua.LString(filepath.Ext(filePath)))
+	rt.L.PushString(absPath)
+	rt.L.SetGlobal("_CURRENT_FILE")
+	rt.L.PushString(filepath.Ext(filePath))
+	rt.L.SetGlobal("_FILE_EXTENSION")
 
 	if err := rt.DoString(luaScript); err != nil {
 		return fmt.Errorf("script execution failed for '%s': %w", filePath, err)

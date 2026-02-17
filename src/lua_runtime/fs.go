@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	lua "github.com/yuin/gopher-lua"
+	"github.com/lucasfabre/codegen/src/lua_runtime/luajit"
 )
 
 // fsFind recursively searches for files and directories matching specific criteria.
@@ -19,19 +19,40 @@ import (
 // @param options table Filters (type="f"|"d", name="glob", maxdepth=N).
 // @returns table A table where keys are paths and values are 'true'.
 // </lua_api>
-func (rt *LuaRuntime) fsFind(L *lua.LState) int {
+func (rt *LuaRuntime) fsFind(L *luajit.State) int {
 	dir := L.CheckString(1)
-	options := L.OptTable(2, L.CreateTable(0, 0))
 
-	fileType := options.RawGetString("type").String()
-	namePattern := options.RawGetString("name").String()
-	maxDepthVal := options.RawGetString("maxdepth")
+	fileType := ""
+	namePattern := ""
 	maxDepth := -1
-	if maxDepthVal.Type() == lua.LTNumber {
-		maxDepth = int(maxDepthVal.(lua.LNumber))
+
+	// Check options table
+	if L.GetTop() >= 2 && !L.IsNil(2) {
+		L.PushValue(2) // Push table to top
+
+		L.GetField(-1, "type")
+		if L.IsString(-1) {
+			fileType = L.ToString(-1)
+		}
+		L.Pop(1)
+
+		L.GetField(-1, "name")
+		if L.IsString(-1) {
+			namePattern = L.ToString(-1)
+		}
+		L.Pop(1)
+
+		L.GetField(-1, "maxdepth")
+		if L.IsNumber(-1) {
+			maxDepth = int(L.ToNumber(-1))
+		}
+		L.Pop(1)
+
+		L.Pop(1) // Pop table copy
 	}
 
-	files := rt.L.CreateTable(0, 0)
+	L.CreateTable(0, 0) // Result table
+	tableIdx := L.GetTop()
 
 	baseDir, _ := filepath.Abs(dir)
 
@@ -44,7 +65,6 @@ func (rt *LuaRuntime) fsFind(L *lua.LState) int {
 		rel, _ := filepath.Rel(baseDir, absPath)
 		depth := 0
 		if rel != "." {
-			// Count separators to determine depth
 			depth = 1
 			for _, char := range rel {
 				if char == os.PathSeparator {
@@ -60,12 +80,10 @@ func (rt *LuaRuntime) fsFind(L *lua.LState) int {
 			return nil
 		}
 
-		// Skip framework directory
 		if info.IsDir() && info.Name() == "framework" {
 			return filepath.SkipDir
 		}
 
-		// Filter by type
 		if fileType == "f" && info.IsDir() {
 			return nil
 		}
@@ -73,7 +91,6 @@ func (rt *LuaRuntime) fsFind(L *lua.LState) int {
 			return nil
 		}
 
-		// Filter by name pattern (glob)
 		if namePattern != "" && namePattern != "nil" {
 			matched, err := filepath.Match(namePattern, info.Name())
 			if err != nil {
@@ -84,17 +101,17 @@ func (rt *LuaRuntime) fsFind(L *lua.LState) int {
 			}
 		}
 
-		files.RawSetString(path, lua.LTrue)
+		L.PushBool(true)
+		L.SetField(tableIdx, path)
 		return nil
 	})
 
 	if err != nil {
-		L.Push(lua.LNil)
-		L.Push(lua.LString(err.Error()))
+		L.PushNil()
+		L.PushString(err.Error())
 		return 2
 	}
 
-	L.Push(files)
 	return 1
 }
 
@@ -109,9 +126,9 @@ func (rt *LuaRuntime) fsFind(L *lua.LState) int {
 // @param path string The file path.
 // @returns string The directory part of the path.
 // </lua_api>
-func (rt *LuaRuntime) fsBaseDir(L *lua.LState) int {
+func (rt *LuaRuntime) fsBaseDir(L *luajit.State) int {
 	path := L.CheckString(1)
-	L.Push(lua.LString(filepath.Dir(path)))
+	L.PushString(filepath.Dir(path))
 	return 1
 }
 
@@ -126,9 +143,9 @@ func (rt *LuaRuntime) fsBaseDir(L *lua.LState) int {
 // @param path string The file path.
 // @returns string The file name.
 // </lua_api>
-func (rt *LuaRuntime) fsBaseName(L *lua.LState) int {
+func (rt *LuaRuntime) fsBaseName(L *luajit.State) int {
 	path := L.CheckString(1)
-	L.Push(lua.LString(filepath.Base(path)))
+	L.PushString(filepath.Base(path))
 	return 1
 }
 
@@ -143,12 +160,12 @@ func (rt *LuaRuntime) fsBaseName(L *lua.LState) int {
 // @param ... string Path elements to join.
 // @returns string The joined path.
 // </lua_api>
-func (rt *LuaRuntime) fsPathJoin(L *lua.LState) int {
+func (rt *LuaRuntime) fsPathJoin(L *luajit.State) int {
 	top := L.GetTop()
 	parts := make([]string, top)
 	for i := 1; i <= top; i++ {
 		parts[i-1] = L.CheckString(i)
 	}
-	L.Push(lua.LString(filepath.Join(parts...)))
+	L.PushString(filepath.Join(parts...))
 	return 1
 }

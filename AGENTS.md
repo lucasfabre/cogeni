@@ -1,6 +1,6 @@
 # cogeni - Language-Agnostic Code Generation Tool
 
-`cogeni` is a powerful, language-agnostic code generation tool that leverages [Tree-sitter](https://tree-sitter.github.io/tree-sitter/) for AST parsing and [Lua](https://www.lua.org/) for generation logic. It allows developers to programmatically transform and generate source code across multiple languages using a unified scripting interface.
+`cogeni` is a powerful, language-agnostic code generation tool that leverages [Tree-sitter](https://tree-sitter.github.io/tree-sitter/) for AST parsing and [LuaJIT](https://luajit.org/) for high-performance generation logic. It allows developers to programmatically transform and generate source code across multiple languages using a unified scripting interface.
 
 ## Project Overview
 
@@ -8,11 +8,11 @@ The core idea of `cogeni` is to parse source files into a rich, queryable Abstra
 
 ### Key Features
 - **Language Agnostic**: Supports any language with a Tree-sitter grammar.
-- **Lua Scripting**: Use the full power of Lua to define your code generation logic.
+- **High Performance**: Uses LuaJIT for script execution and a parallel Go orchestration engine.
 - **AST-Aware**: Access detailed source code structure, not just regex-based matching.
 - **JQ Integration**: Built-in support for querying JSON data using JQ within Lua.
 - **Parallel Orchestration**: Automatically manages file dependencies and processes files in parallel.
-- **Embedded FS and JSON**: Custom Lua modules for file system operations and JSON manipulation.
+- **Embedded FS and Serialization**: Custom Lua modules for file system operations, JSON, YAML, TOML, and XML.
 
 ## Architecture
 
@@ -20,14 +20,14 @@ The project is structured into several Go packages:
 
 - `src/cmd/`: CLI implementation using [Cobra](https://github.com/spf13/cobra).
 - `src/astparser/`: Manages Tree-sitter grammars and transforms native ASTs into a serializable format for Lua.
-- `src/lua_runtime/`: Provides a sandboxed Lua environment with custom bindings for AST access, file system, JQ, and JSON.
+- `src/lua_runtime/`: Provides a sandboxed Lua environment with custom bindings for AST access, file system, JQ, and more.
 - `src/processor/`: Orchestrates the code generation lifecycle, handling file dependencies and concurrent tasks.
 - `src/config/`: Configuration management using [Viper](https://github.com/spf13/viper).
 
 ## Technologies
 
 - **Go 1.25+**: Primary implementation language.
-- **Lua (gopher-lua)**: Embedded scripting engine.
+- **LuaJIT 2.1**: High-performance embedded scripting engine.
 - **Tree-sitter (go-tree-sitter)**: Incremental parsing system.
 - **JQ (gojq)**: Pure Go implementation of JQ.
 - **Just**: Task runner for development commands.
@@ -36,12 +36,14 @@ The project is structured into several Go packages:
 
 ### Prerequisites
 - Go 1.25 or higher.
+- **LuaJIT 2.1 development headers and libraries**.
+- **pkg-config** (recommended for automatic linking).
 - [Just](https://github.com/casey/just) task runner (optional, but recommended).
 - [Mise](https://mise.jdx.dev/) for tool management (optional).
 
 ### Building and Running
 ```bash
-# Build the cogeni binary
+# Build the cogeni binary (requires pkg-config)
 just build
 
 # Run cogeni (it will look for cogeni.lua in the current directory)
@@ -49,6 +51,30 @@ just build
 
 # Run a specific Lua script
 ./cogeni run script.lua
+```
+
+### LuaJIT Linking & CGO
+Since `cogeni` uses LuaJIT via CGO, linking is required.
+
+**Standard Build (via pkg-config):**
+If `pkg-config` is available and `luajit.pc` is in your path:
+```bash
+go build -o cogeni ./src
+```
+
+**Manual Build (without pkg-config):**
+If `pkg-config` is missing, you must provide the include and library paths manually:
+```bash
+export CGO_CFLAGS="-I/path/to/luajit/include"
+export CGO_LDFLAGS="-L/path/to/luajit/lib -lluajit-5.1"
+go build -o cogeni ./src
+```
+
+**Runtime Dependencies:**
+Ensure the LuaJIT shared library is in your dynamic linker's path:
+```bash
+export LD_LIBRARY_PATH="/path/to/luajit/lib:$LD_LIBRARY_PATH"
+./cogeni --version
 ```
 
 ## Subcommands
@@ -78,7 +104,8 @@ In addition to dedicated `.lua` scripts, `cogeni` can process files with embedde
 
 ### Development Commands
 ```bash
-# Run all tests (Go unit tests and shell integration tests)
+# Run all tests (Ensure LD_LIBRARY_PATH is set)
+export LD_LIBRARY_PATH="/path/to/luajit/lib:$LD_LIBRARY_PATH"
 just test
 
 # Run Lua-specific integration tests
@@ -116,12 +143,14 @@ grammar:
   - `outfile(id, path)`: Directs `write(id, content)` output to a whole file.
   - `outtag(id, path, tag)`: Directs `write(id, content)` output to a tagged block in a file.
 - `fs`: File system utilities (`find`, `join`, `basedir`, `basename`).
-- `json`: JSON encoding and decoding.
+- `json`, `yaml`, `toml`, `xml`: Serialization modules (`encode`, `decode`).
 - `jq`: Execute JQ queries on Lua tables/JSON strings.
 - `write(id, content)`: Global function to buffer generated content for a specific target.
+- `async(fn, ...)`: Global function to spawn an asynchronous Lua task.
+- `await(target)`: Global function to wait for an async task or thread.
 
 ## Testing Practices
 
 - **Go Tests**: Located in `src/` alongside implementation (e.g., `config_test.go`) and in `tests/`.
 - **Lua Tests**: Located in `tests/lua/`, used to verify Lua bindings and generation logic.
-- **Shell Tests**: Located in `tests/shell/`, used for end-to-end CLI integration testing.
+- **Shell Tests**: Located in `tests/shell/`, used for end-to-end CLI integration testing. Ensure `LD_LIBRARY_PATH` is set during execution.

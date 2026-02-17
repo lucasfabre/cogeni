@@ -3,7 +3,6 @@ module github.com/lucasfabre/codegen
 go 1.25.0
 
 require (
-	github.com/CuberL/glua-async v0.0.0-20190614102843-43f22221106d
 	github.com/clbanning/mxj/v2 v2.7.0
 	github.com/ebitengine/purego v0.9.1
 	github.com/fsnotify/fsnotify v1.9.0
@@ -13,7 +12,6 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/tree-sitter/go-tree-sitter v0.25.0
-	github.com/yuin/gopher-lua v1.1.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
