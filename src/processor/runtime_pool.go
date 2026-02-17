@@ -36,8 +36,14 @@ func (rp *RuntimePool) Acquire() (*luaruntime.LuaRuntime, error) {
 
 // Release returns a runtime to the pool for reuse.
 func (rp *RuntimePool) Release(rt *luaruntime.LuaRuntime) {
-	// always close the runtime to avoid issues with glua-async state on reuse.
-	rt.Close()
+	rt.Reset()
+	select {
+	case rp.pool <- rt:
+		// Runtime returned to pool
+	default:
+		// Pool is full, close it
+		rt.Close()
+	}
 }
 
 // Close shuts down all runtimes in the pool.

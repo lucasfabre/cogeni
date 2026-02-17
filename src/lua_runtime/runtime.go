@@ -250,6 +250,7 @@ func (rt *LuaRuntime) Close() {
 func (rt *LuaRuntime) Reset() {
 	rt.Output = make(map[string]string)
 	rt.OutputTargets = make(map[string]OutputTarget)
+	rt.Scheduler = NewScheduler()
 
 	rt.L.PushNil()
 	rt.L.SetGlobal("_CURRENT_FILE")
