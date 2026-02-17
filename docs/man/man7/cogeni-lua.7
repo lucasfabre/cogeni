@@ -14,7 +14,7 @@ Extension of the currently executing script (including the dot).
 .SH GLOBAL FUNCTIONS
 .TP
 .B async(fn, ...)
-Starts a new asynchronous task.
+Spawns an asynchronous task.
 .IP
 \fBParameters:\fR
 .RS
@@ -26,25 +26,27 @@ Starts a new asynchronous task.
 .IP
 \fBReturns:\fR
 .RS
-userdata A job handle.
+thread The coroutine thread handle.
 .RE
 .TP
-.B await(job)
-Pauses until a job completes.
+.B result = await(target, ...)
+Waits for an asynchronous task or thread to complete and returns its results.
 .IP
 \fBParameters:\fR
 .RS
-\fIjob\fR (userdata): The job handle to wait for.
+\fItarget\fR (function|thread): The task or thread to wait for.
+.br
+\fI...\fR (any): Arguments if target is a function.
 .br
 .RE
 .IP
 \fBReturns:\fR
 .RS
-... any The results of the async function.
+any The results from the completed task.
 .RE
 .TP
 .B sleep(seconds)
-Pauses execution for a duration.
+Pauses execution for a given number of seconds.
 .IP
 \fBParameters:\fR
 .RS
@@ -53,13 +55,13 @@ Pauses execution for a duration.
 .RE
 .TP
 .B write(id, content)
-Buffers text for a specific output block.
+Buffers generated content for a specific target identifier.
 .IP
 \fBParameters:\fR
 .RS
-\fIid\fR (string): The block ID.
+\fIid\fR (string): The target identifier (tag or file ID).
 .br
-\fIcontent\fR (string): The content to write.
+\fIcontent\fR (string|table): The content to write. If table, joins elements with newlines.
 .br
 .RE
 .SH MODULES
@@ -79,42 +81,18 @@ Looks up a grammar name by file extension.
 string The grammar name.
 .RE
 .TP
-.B cogeni.outfile(id, path)
-Redirects write(id) to a file.
-.IP
-\fBParameters:\fR
-.RS
-\fIid\fR (string): The block ID.
-.br
-\fIpath\fR (string): The file path to overwrite.
-.br
-.RE
-.TP
-.B cogeni.outtag(id, path, tag)
-Redirects write(id) to a specific tag in a file.
-.IP
-\fBParameters:\fR
-.RS
-\fIid\fR (string): The block ID.
-.br
-\fIpath\fR (string): The file path.
-.br
-\fItag\fR (string): The tag in the file.
-.br
-.RE
-.TP
 .B cogeni.process(path)
-Triggers the generation lifecycle for a file.
+Triggers the generation lifecycle for a specific file.
 .IP
 \fBParameters:\fR
 .RS
-\fIpath\fR (string): The file path.
+\fIpath\fR (string): The file path to process.
 .br
 .RE
 .IP
 \fBReturns:\fR
 .RS
-boolean True on success.
+boolean True if successful.
 .RE
 .TP
 .B cogeni.read_ast(source, language)
@@ -259,7 +237,7 @@ Decodes a TOML string into a Lua table.
 .IP
 \fBParameters:\fR
 .RS
-\fIstr\fR (string): The TOML string to decode.
+\fIstr\fR (string): The TOML string.
 .br
 .RE
 .IP
@@ -268,12 +246,12 @@ Decodes a TOML string into a Lua table.
 any The decoded Lua value.
 .RE
 .TP
-.B toml.encode(data)
+.B toml.encode(val)
 Encodes a Lua value to a TOML string.
 .IP
 \fBParameters:\fR
 .RS
-\fIdata\fR (any): The Lua value to encode.
+\fIval\fR (any): The value to encode.
 .br
 .RE
 .IP
@@ -288,7 +266,7 @@ Decodes an XML string into a Lua table.
 .IP
 \fBParameters:\fR
 .RS
-\fIstr\fR (string): The XML string to decode.
+\fIstr\fR (string): The XML string.
 .br
 .RE
 .IP
@@ -297,14 +275,14 @@ Decodes an XML string into a Lua table.
 any The decoded Lua value.
 .RE
 .TP
-.B xml.encode(data, options)
+.B xml.encode(val, options)
 Encodes a Lua value to an XML string.
 .IP
 \fBParameters:\fR
 .RS
-\fIdata\fR (any): The Lua value to encode.
+\fIval\fR (any): The value to encode.
 .br
-\fIoptions\fR (table|nil): Optional formatting options (e.g. {root="root_name"}).
+\fIoptions\fR (table): Optional formatting options (e.g. {root="root"}).
 .br
 .RE
 .IP
@@ -319,21 +297,21 @@ Decodes a YAML string into a Lua table.
 .IP
 \fBParameters:\fR
 .RS
-\fIstr\fR (string): The YAML string to decode.
+\fIstr\fR (string): The YAML string.
 .br
 .RE
 .IP
 \fBReturns:\fR
 .RS
-any The decoded Lua value (table, string, number, etc).
+any The decoded Lua value.
 .RE
 .TP
-.B yaml.encode(data)
+.B yaml.encode(val)
 Encodes a Lua value to a YAML string.
 .IP
 \fBParameters:\fR
 .RS
-\fIdata\fR (any): The Lua value to encode.
+\fIval\fR (any): The value to encode.
 .br
 .RE
 .IP

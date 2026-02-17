@@ -89,6 +89,7 @@ func New(cfg *config.Config) (*LuaRuntime, error) {
 		})
 	})
 	// <lua_api>
+	// @module global
 	// @function sleep
 	// @summary Pauses execution for a given number of seconds.
 	// @usage sleep(seconds)
@@ -122,6 +123,7 @@ func New(cfg *config.Config) (*LuaRuntime, error) {
 		return 0
 	})
 	// <lua_api>
+	// @module global
 	// @function write
 	// @summary Buffers generated content for a specific target identifier.
 	// @usage write(id, content)
@@ -167,6 +169,7 @@ func New(cfg *config.Config) (*LuaRuntime, error) {
 		return 1
 	})
 	// <lua_api>
+	// @module global
 	// @function async
 	// @summary Spawns an asynchronous task.
 	// @usage async(fn, ...)
@@ -204,16 +207,18 @@ func New(cfg *config.Config) (*LuaRuntime, error) {
 	})
 	rt.L.SetGlobal("_await_thread")
 
+	// <lua_api>
+	// @module global
+	// @function await
+	// @summary Waits for an asynchronous task or thread to complete and returns its results.
+	// @usage result = await(target, ...)
+	// @param target function|thread The task or thread to wait for.
+	// @param ... any Arguments if target is a function.
+	// @returns any The results from the completed task.
+	// </lua_api>
+
 	// Define await in Lua to handle function calls
 	err = rt.L.DoString(`
-		-- <lua_api>
-		-- @function await
-		-- @summary Waits for an asynchronous task or thread to complete and returns its results.
-		-- @usage result = await(target, ...)
-		-- @param target function|thread The task or thread to wait for.
-		-- @param ... any Arguments if target is a function.
-		-- @returns any The results from the completed task.
-		-- </lua_api>
 		function await(target, ...)
 			if type(target) == "function" then
 				return target(...)

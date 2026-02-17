@@ -4,3 +4,5 @@ dist/
 /tests/grammars
 .cache/
 examples/performance/src/
+vendor/
+!vendor/.gitkeep
