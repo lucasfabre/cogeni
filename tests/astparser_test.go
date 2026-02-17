@@ -8,15 +8,41 @@ import (
 	"github.com/lucasfabre/codegen/src/astparser"
 )
 
-func TestParseTypeScript(t *testing.T) {
-	// Create a temporary directory for grammars
-	tmpGrammarDir, err := os.MkdirTemp("", "astparser-test-grammars-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer func() { _ = os.RemoveAll(tmpGrammarDir) }()
+var testGrammarDir string
 
-	parser, err := astparser.New(tmpGrammarDir)
+func TestMain(m *testing.M) {
+	// Use a persistent directory for grammars to avoid re-downloading/re-compiling
+	// across test runs and test cases.
+	// We use .cache/test-grammars in the project root (assuming tests are run from project root or tests dir)
+
+	// Determine project root. Since this test is in "tests/", parent is root.
+	wd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	projectRoot := filepath.Dir(wd)
+	if filepath.Base(wd) != "tests" {
+		// If running from root via go test ./...
+		projectRoot = wd
+	}
+
+	testGrammarDir = filepath.Join(projectRoot, ".cache", "test-grammars")
+
+	if err := os.MkdirAll(testGrammarDir, 0755); err != nil {
+		panic(err)
+	}
+
+	code := m.Run()
+
+	// Optional: Clean up if desired, but keeping it speeds up future runs
+	// os.RemoveAll(testGrammarDir)
+
+	os.Exit(code)
+}
+
+func TestParseTypeScript(t *testing.T) {
+	parser, err := astparser.New(testGrammarDir)
 	if err != nil {
 		t.Fatalf("Failed to create parser: %v", err)
 	}
@@ -62,14 +88,7 @@ func TestParseTypeScript(t *testing.T) {
 }
 
 func TestParseGo(t *testing.T) {
-	// Create a temporary directory for grammars
-	tmpGrammarDir, err := os.MkdirTemp("", "astparser-test-grammars-go-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer func() { _ = os.RemoveAll(tmpGrammarDir) }()
-
-	parser, err := astparser.New(tmpGrammarDir)
+	parser, err := astparser.New(testGrammarDir)
 	if err != nil {
 		t.Fatalf("Failed to create parser: %v", err)
 	}

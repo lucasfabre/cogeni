@@ -11,13 +11,17 @@ function M.describe(name, fn)
 end
 
 function M.it(name, fn)
+	local start_time = os.clock()
 	local ok, err = pcall(fn)
+	local end_time = os.clock()
+	local elapsed = end_time - start_time
+
 	if ok then
 		passes = passes + 1
-		print("  [PASS] " .. name)
+		print(string.format("  [PASS] %s (%.4fs)", name, elapsed))
 	else
 		failures = failures + 1
-		print("  [FAIL] " .. name)
+		print(string.format("  [FAIL] %s (%.4fs)", name, elapsed))
 		print("    " .. tostring(err))
 	end
 end

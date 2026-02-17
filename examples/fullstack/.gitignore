@@ -1,1 +1,6 @@
 __pycache__
+.venv
+node_modules
+test.db
+main.py
+.DS_Store

@@ -27,18 +27,15 @@ it "should watch a simple file and update on change" '
     WATCH_PID=$!
 
     # Wait for initial build
-    sleep 2
+    wait_for_log "watch.log" "Watching for changes" || { echo "Timeout waiting for start"; cat watch.log; exit 1; }
 
-    assert_file_exists "output.txt"
-    assert_contains "$(cat output.txt)" "version 1"
+    wait_for_file_content "output.txt" "version 1" || { echo "Timeout waiting for version 1"; cat watch.log; exit 1; }
 
     # Modify file
     echo "write(\"out\", \"version 2\")" > entry.lua
     echo "cogeni.outfile(\"out\", \"output.txt\")" >> entry.lua
 
-    sleep 2
-
-    assert_contains "$(cat output.txt)" "version 2"
+    wait_for_file_content "output.txt" "version 2" || { echo "Timeout waiting for version 2"; cat watch.log; exit 1; }
 '
 
 it "should watch dependencies and update on change" '
@@ -55,10 +52,9 @@ it "should watch dependencies and update on change" '
     $COGENI_BIN watch entry.lua > watch.log 2>&1 &
     WATCH_PID=$!
 
-    sleep 2
+    wait_for_log "watch.log" "Watching for changes" || { echo "Timeout waiting for start"; cat watch.log; exit 1; }
 
-    assert_file_exists "dep_output.txt"
-    assert_contains "$(cat dep_output.txt)" "dep 1"
+    wait_for_file_content "dep_output.txt" "dep 1" || { echo "Timeout waiting for dep 1"; cat watch.log; exit 1; }
 
     # Modify dependency
     echo "-- <cogeni>" > dep.lua
@@ -66,9 +62,7 @@ it "should watch dependencies and update on change" '
     echo "cogeni.outfile(\"dep\", \"dep_output.txt\")" >> dep.lua
     echo "-- </cogeni>" >> dep.lua
 
-    sleep 2
-
-    assert_contains "$(cat dep_output.txt)" "dep 2"
+    wait_for_file_content "dep_output.txt" "dep 2" || { echo "Timeout waiting for dep 2"; cat watch.log; exit 1; }
 '
 
 it "should handle atomic saves (Rename)" '
@@ -78,17 +72,15 @@ it "should handle atomic saves (Rename)" '
     $COGENI_BIN watch entry.lua > watch.log 2>&1 &
     WATCH_PID=$!
 
-    sleep 2
-    assert_contains "$(cat output.txt)" "version 1"
+    wait_for_log "watch.log" "Watching for changes" || { echo "Timeout waiting for start"; cat watch.log; exit 1; }
+    wait_for_file_content "output.txt" "version 1" || { echo "Timeout waiting for version 1"; cat watch.log; exit 1; }
 
     # Atomic save simulation: create tmp and move
     echo "write(\"out\", \"version 2\")" > entry.lua.tmp
     echo "cogeni.outfile(\"out\", \"output.txt\")" >> entry.lua.tmp
     mv entry.lua.tmp entry.lua
 
-    sleep 2
-
-    assert_contains "$(cat output.txt)" "version 2"
+    wait_for_file_content "output.txt" "version 2" || { echo "Timeout waiting for version 2"; cat watch.log; exit 1; }
 '
 
 it "should detect circular dependencies" '
@@ -106,7 +98,7 @@ it "should detect circular dependencies" '
     $COGENI_BIN watch A.lua > watch.log 2>&1 &
     WATCH_PID=$!
 
-    sleep 2
-
-    assert_contains "$(cat watch.log)" "circular dependency detected"
+    # Wait for cycle detection message
+    # "circular dependency detected" might be part of the error message
+    wait_for_log "watch.log" "circular dependency detected" || { echo "Timeout waiting for cycle detection"; cat watch.log; exit 1; }
 '

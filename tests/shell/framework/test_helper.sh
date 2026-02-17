@@ -22,6 +22,14 @@ if [ -z "$COGENI_BIN" ]; then
 	fi
 fi
 
+# Set shared grammar location for tests to avoid re-downloading/re-compiling
+if [ -z "$COGENI_GRAMMAR_LOCATION" ]; then
+	# Try to find project root via git, fallback to pwd (assuming we are in root)
+	PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+	export COGENI_GRAMMAR_LOCATION="$PROJECT_ROOT/.cache/test-grammars"
+	mkdir -p "$COGENI_GRAMMAR_LOCATION"
+fi
+
 describe() {
 	echo -e "
 $1"
@@ -37,15 +45,30 @@ it() {
 		setup
 	fi
 
+	# Record start time (using nanoseconds if available)
+	local start_time
+	start_time=$(date +%s%N)
+
 	# Run the command with COGENI_BIN exported
 	# Use a subshell with 'set -e' to ensure any failing command (including assertions)
 	# results in a non-zero exit code for the entire test block.
 	# We source the helper_path to make assertion functions available.
-	if bash -c "set -e; export COGENI_BIN=\"$COGENI_BIN\"; source \"$helper_path\"; $cmd"; then
-		echo -e "  ${GREEN}[PASS]${NC} $name"
+	if bash -c "set -e; export COGENI_BIN=\"$COGENI_BIN\"; export COGENI_GRAMMAR_LOCATION=\"$COGENI_GRAMMAR_LOCATION\"; source \"$helper_path\"; $cmd"; then
+		local end_time
+		end_time=$(date +%s%N)
+		local elapsed_ns=$((end_time - start_time))
+		# Convert ns to seconds with 3 decimal places using python3
+		local elapsed_s
+		elapsed_s=$(python3 -c "print(f'{($elapsed_ns / 1000000000):.3f}')")
+		echo -e "  ${GREEN}[PASS]${NC} $name (${elapsed_s}s)"
 		PASSES=$((PASSES + 1))
 	else
-		echo -e "  ${RED}[FAIL]${NC} $name"
+		local end_time
+		end_time=$(date +%s%N)
+		local elapsed_ns=$((end_time - start_time))
+		local elapsed_s
+		elapsed_s=$(python3 -c "print(f'{($elapsed_ns / 1000000000):.3f}')")
+		echo -e "  ${RED}[FAIL]${NC} $name (${elapsed_s}s)"
 		FAILURES=$((FAILURES + 1))
 	fi
 
@@ -93,6 +116,36 @@ assert_file_exists() {
 		echo "File '$1' does not exist" >&2
 		return 1
 	fi
+}
+
+wait_for_log() {
+	local log_file="$1"
+	local pattern="$2"
+	local timeout=50 # 5 seconds (0.1s * 50)
+	local i=0
+	while [ $i -lt $timeout ]; do
+		if grep -q "$pattern" "$log_file"; then
+			return 0
+		fi
+		sleep 0.1
+		i=$((i + 1))
+	done
+	return 1
+}
+
+wait_for_file_content() {
+	local file="$1"
+	local pattern="$2"
+	local timeout=50
+	local i=0
+	while [ $i -lt $timeout ]; do
+		if [ -f "$file" ] && grep -q "$pattern" "$file"; then
+			return 0
+		fi
+		sleep 0.1
+		i=$((i + 1))
+	done
+	return 1
 }
 
 summary() {
