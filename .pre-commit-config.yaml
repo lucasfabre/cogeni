@@ -35,3 +35,11 @@ repos:
       - id: prettier
         types_or: [ts, sql, yaml, toml]
         additional_dependencies: [prettier@3.1.0, prettier-plugin-sql]
+
+  - repo: local
+    hooks:
+      - id: cogeni
+        name: cogeni (local)
+        entry: scripts/pre-commit-cogeni.sh
+        language: script
+        pass_filenames: false

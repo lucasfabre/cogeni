@@ -1,0 +1,6 @@
+- id: cogeni
+  name: cogeni
+  description: Automatically keeps generated code up-to-date using cogeni.
+  entry: scripts/pre-commit-cogeni.sh
+  language: script
+  pass_filenames: false
