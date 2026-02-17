@@ -3,3 +3,4 @@ cogeni
 dist/
 /tests/grammars
 .cache/
+examples/performance/src/

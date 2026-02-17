@@ -208,9 +208,17 @@ func ExtractCogeniBlocks(content string) string {
 		// Try to strip the full prefix first (comment char included)
 		if strings.HasPrefix(line, prefix) {
 			code = line[len(prefix):]
-		} else if strings.HasPrefix(line, indent) {
-			// Fallback: strip just the indentation
-			code = line[len(indent):]
+		} else {
+			// Robust fallback: strip prefix without the trailing space if it exists
+			trimmedPrefix := strings.TrimRightFunc(prefix, unicode.IsSpace)
+			if trimmedPrefix != "" && strings.HasPrefix(line, trimmedPrefix) {
+				code = line[len(trimmedPrefix):]
+				// Also strip one space if it's there
+				code = strings.TrimPrefix(code, " ")
+			} else if strings.HasPrefix(line, indent) {
+				// Fallback: strip just the indentation
+				code = line[len(indent):]
+			}
 		}
 		script.WriteString(code)
 		script.WriteString("\n")

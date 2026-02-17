@@ -164,3 +164,12 @@ build-docs: build
 	python3 ./scripts/build_man_pages_md.py
 	./scripts/build_api_docs_md.sh
 	./scripts/build_site.sh
+
+profile-perf: build
+	mkdir -p profiles
+	@echo "Generating stress test environment..."
+	./cogeni run examples/performance/generate.lua
+	@echo "Running stress test with CPU profiling..."
+	CPUPROFILE=profiles/perf_cpu.prof ./cogeni run examples/performance/cogeni.lua
+	@echo "Opening pprof..."
+	go tool pprof -http=:8080 profiles/perf_cpu.prof
