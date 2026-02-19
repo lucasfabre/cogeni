@@ -149,12 +149,12 @@ func (m *GrammarManager) downloadAndExtract(opts GrammarOptions, dest string) er
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return fmt.Errorf("HTTP request failed for %s: %w", url, err)
+		return fmt.Errorf("http request failed for %s: %w", url, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("HTTP error %d for %s", resp.StatusCode, url)
+		return fmt.Errorf("http error %d for %s", resp.StatusCode, url)
 	}
 
 	gz, err := gzip.NewReader(resp.Body)
@@ -260,7 +260,7 @@ func (m *GrammarManager) compileGrammar(parserC, libPath string) error {
 
 	cmd := exec.Command(compiler, args...)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("C compilation failed: %s: %w", string(out), err)
+		return fmt.Errorf("c compilation failed: %s: %w", string(out), err)
 	}
 	return nil
 }

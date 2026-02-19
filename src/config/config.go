@@ -120,7 +120,7 @@ func getConfigPath() (string, error) {
 	case "windows":
 		configDir = os.Getenv("APPDATA")
 		if configDir == "" {
-			return "", fmt.Errorf("APPDATA environment variable not set")
+			return "", fmt.Errorf("appdata environment variable not set")
 		}
 	case "darwin":
 		configDir = filepath.Join(home, "Library", "Application Support")
@@ -152,7 +152,7 @@ func getDefaultGrammarLocation() (string, error) {
 			dataDir = os.Getenv("APPDATA")
 		}
 		if dataDir == "" {
-			return "", fmt.Errorf("LOCALAPPDATA or APPDATA environment variable not set")
+			return "", fmt.Errorf("localappdata or appdata environment variable not set")
 		}
 	case "darwin":
 		dataDir = filepath.Join(home, "Library", "Application Support")

@@ -32,6 +32,15 @@ func (rt *LuaRuntime) cogeniProcess(L *lua.LState) int {
 		path = filepath.Join(filepath.Dir(currentFile), path)
 	}
 
+	// Validate path to prevent traversal
+	var err error
+	path, err = rt.validatePath(path)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString(err.Error()))
+		return 2
+	}
+
 	if err := rt.ProcessFunc(path, currentFile); err != nil {
 		L.Push(lua.LNil)
 		L.Push(lua.LString(err.Error()))

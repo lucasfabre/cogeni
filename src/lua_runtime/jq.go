@@ -2,9 +2,15 @@ package luaruntime
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/itchyny/gojq"
 	lua "github.com/yuin/gopher-lua"
+)
+
+var (
+	jqCache   = make(map[string]*gojq.Query)
+	jqCacheMu sync.RWMutex
 )
 
 // jqQuery executes a JQ query against a Lua value (typically an AST table).
@@ -25,11 +31,22 @@ func (rt *LuaRuntime) jqQuery(L *lua.LState) int {
 
 	goValue := luaValueToGoValue(value)
 
-	query, err := gojq.Parse(queryString)
-	if err != nil {
-		L.Push(lua.LNil)
-		L.Push(lua.LString(fmt.Sprintf("failed to parse jq query: %v", err)))
-		return 2
+	jqCacheMu.RLock()
+	query, ok := jqCache[queryString]
+	jqCacheMu.RUnlock()
+
+	if !ok {
+		var err error
+		query, err = gojq.Parse(queryString)
+		if err != nil {
+			L.Push(lua.LNil)
+			L.Push(lua.LString(fmt.Sprintf("failed to parse jq query: %v", err)))
+			return 2
+		}
+
+		jqCacheMu.Lock()
+		jqCache[queryString] = query
+		jqCacheMu.Unlock()
 	}
 
 	iter := query.Run(goValue)

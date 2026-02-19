@@ -34,8 +34,8 @@ export class ApiClient {
 
   async createUser(item: T.User): Promise<T.User> {
     const res = await fetch(`${this.baseUrl}/users`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(item),
     });
     return res.json();
@@ -48,8 +48,8 @@ export class ApiClient {
 
   async createProduct(item: T.Product): Promise<T.Product> {
     const res = await fetch(`${this.baseUrl}/products`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(item),
     });
     return res.json();
@@ -62,8 +62,8 @@ export class ApiClient {
 
   async createTodo(item: T.Todo): Promise<T.Todo> {
     const res = await fetch(`${this.baseUrl}/todos`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(item),
     });
     return res.json();

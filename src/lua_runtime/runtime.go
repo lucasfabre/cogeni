@@ -293,3 +293,28 @@ func (rt *LuaRuntime) registerXMLModule() {
 	rt.L.SetField(xmlTable, "decode", rt.L.NewFunction(rt.xmlDecode))
 	rt.L.SetGlobal("xml", xmlTable)
 }
+
+// validatePath ensures that a given path is within the allowed project scope (current working directory).
+// It returns the absolute path if valid, or an error otherwise.
+func (rt *LuaRuntime) validatePath(path string) (string, error) {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	rel, err := filepath.Rel(cwd, absPath)
+	if err != nil {
+		return "", err
+	}
+
+	if strings.HasPrefix(rel, "..") {
+		return "", fmt.Errorf("path traversal detected: path '%s' is outside the project root", path)
+	}
+
+	return absPath, nil
+}

@@ -33,9 +33,15 @@ func (rt *LuaRuntime) fsFind(L *lua.LState) int {
 
 	files := rt.L.CreateTable(0, 0)
 
-	baseDir, _ := filepath.Abs(dir)
+	absDir, err := rt.validatePath(dir)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString(err.Error()))
+		return 2
+	}
+	baseDir := absDir
 
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}

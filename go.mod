@@ -1,6 +1,6 @@
 module github.com/lucasfabre/codegen
 
-go 1.25.0
+go 1.24.3
 
 require (
 	github.com/CuberL/glua-async v0.0.0-20190614102843-43f22221106d
