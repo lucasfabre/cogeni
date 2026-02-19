@@ -16,7 +16,7 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:     "cogeni [file...]",
+	Use:     "cogeni",
 	Short:   "cogeni is a language-agnostic code generation tool",
 	Long:    `A powerful tool that regenerates code blocks using embedded Lua scripts and JQ queries.`,
 	Version: "0.1.0",

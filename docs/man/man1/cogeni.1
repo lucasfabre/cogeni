@@ -17,6 +17,9 @@ cogeni \- A language-agnostic code generation tool
 .B cogeni run
 [\fISCRIPT.lua\fR] [\fB\-e\fR \fICODE\fR]
 .br
+.B cogeni completion
+[\fIbash|zsh|fish|powershell\fR]
+.br
 .B cogeni show dependency-graph
 [\fIENTRY.lua\fR]
 .br
@@ -53,6 +56,9 @@ Performs a dry-run of the generation and shows a unified diff of the changes tha
 .TP
 .B run [\fISCRIPT.lua\fR]
 Executes a Lua script. Useful for project-wide orchestration. If no script is provided, it looks for \fBcogeni.lua\fR.
+.TP
+.B completion [\fIbash|zsh|fish|powershell\fR]
+Generates shell completion scripts for Bash, Zsh, Fish, and PowerShell.
 .TP
 .B show dependency-graph [\fIENTRY.lua\fR]
 Visualizes the execution and file dependency tree discovered during processing.

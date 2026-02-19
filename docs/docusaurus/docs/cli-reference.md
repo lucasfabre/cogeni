@@ -129,3 +129,24 @@ cogeni config [flags]
 ```bash
 cogeni config
 ```
+
+### `completion`
+
+Generates shell completion scripts for Bash, Zsh, Fish, and PowerShell.
+
+**Usage:**
+```bash
+cogeni completion [bash|zsh|fish|powershell]
+```
+
+**Arguments:**
+- `shell`: The target shell (bash, zsh, fish, powershell).
+
+**Example:**
+```bash
+# Load bash completion
+source <(cogeni completion bash)
+
+# Load zsh completion
+cogeni completion zsh > "${fpath[1]}/_cogeni"
+```

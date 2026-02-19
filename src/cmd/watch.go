@@ -23,6 +23,12 @@ var watchCmd = &cobra.Command{
 	Short: "Watch files and re-run generation on changes",
 	Long:  `Watch the entry script and all its dependencies, re-running the generation process whenever a file changes.`,
 	Args:  cobra.MaximumNArgs(1),
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if len(args) == 0 {
+			return []string{"lua"}, cobra.ShellCompDirectiveFilterFileExt
+		}
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Initialize the watcher
 		watcher, err := fsnotify.NewWatcher()
