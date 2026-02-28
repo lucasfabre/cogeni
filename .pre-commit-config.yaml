@@ -40,4 +40,4 @@ repos:
     rev: HEAD
     hooks:
       - id: cogeni
-        args: [./cogeni]
+        entry: scripts/pre-commit-cogeni.sh ./cogeni
