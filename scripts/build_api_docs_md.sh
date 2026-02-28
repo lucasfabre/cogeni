@@ -19,14 +19,14 @@ echo "Generating Go API docs with gomarkdoc..."
 # but we can list packages and loop.
 
 # Create _category_.json for the API section
-# Ensure slug matches docusaurus.config.ts configuration (/docs/go-api)
+# Ensure slug matches docusaurus.config.ts configuration (/docs/api)
 cat <<EOF >"$DOCS_DIR/_category_.json"
 {
   "label": "Go API",
-  "position": 5,
+  "position": 9,
   "link": {
     "type": "generated-index",
-    "slug": "go-api",
+    "slug": "api",
     "description": "Go API Reference for cogeni packages."
   }
 }

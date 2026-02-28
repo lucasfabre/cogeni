@@ -98,7 +98,7 @@ const config: Config = {
           position: "left",
         },
         {
-          to: "/docs/go-api",
+          to: "/docs/api",
           label: "API",
           position: "left",
         },

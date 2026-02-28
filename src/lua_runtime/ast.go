@@ -18,12 +18,12 @@ import (
 // @summary Parses source code into a detailed AST.
 // @usage cogeni.read_ast(source, language)
 // @param source string|table File path or handle.
-// @param language string The grammar name (e.g. "go", "python").
+// @param language string|nil The grammar name (optional, defaults to file extension).
 // @returns table The AST table.
 // </lua_api>
 func (rt *LuaRuntime) cogeniReadAST(L *lua.LState) int {
 	firstArg := L.CheckAny(1)
-	lang := L.CheckString(2)
+	lang := L.OptString(2, "")
 
 	var source []byte
 	var err error
@@ -31,6 +31,17 @@ func (rt *LuaRuntime) cogeniReadAST(L *lua.LState) int {
 	if firstArg.Type() == lua.LTString {
 		// Case 2: It's a path string
 		path := firstArg.String()
+
+		// If lang is not provided, try to detect it from extension
+		if lang == "" {
+			ext := filepath.Ext(path)
+			lang = rt.cfg.GetGrammarForExtension(ext)
+			if lang == "" {
+				L.Push(lua.LNil)
+				L.Push(lua.LString(fmt.Sprintf("could not detect language for extension '%s'", ext)))
+				return 2
+			}
+		}
 		currentFile := rt.L.GetGlobal("_CURRENT_FILE").String()
 
 		// Resolve path relative to current file if it is relative

@@ -1,3 +1,8 @@
+---
+sidebar_position: 2
+title: "First Generator"
+---
+
 # Creating Your First Generator
 
 This guide will walk you through creating a simple code generator using `cogeni`. We'll create a Python script that defines a data model, and use `cogeni` to automatically generate a corresponding JSON schema.
@@ -20,38 +25,57 @@ class User:
 
 ## Step 2: Create the Generator Script
 
-Create a file named `generate_schema.lua` in the same directory. This script will read `models.py`, extract the class definition, and generate a JSON schema.
+Create a file named `cogeni.lua` in the same directory. This script will read `models.py`, extract the class definition, and generate a JSON schema.
 
 ```lua
 -- Read the AST of models.py
+-- cogeni detects the language automatically from the .py extension
 local ast = cogeni.read_ast("models.py")
 
--- Find the class definition using JQ (or manual traversal)
--- Here we assume a simple structure for demonstration
-local class_node = jq.query(ast, ".root.children[] | select(.type == \"class_definition\")")
-local class_name = jq.query(class_node, ".children[] | select(.type == \"identifier\") | .text")
+-- Find the class definition and its name using JQ
+-- We query the root children and use named fields for robustness
+local class_node = jq.query(ast, ".children[] | select(.type == \"class_definition\")")
+local class_name = jq.query(class_node, ".fields.name.content")
 
--- Extract fields
-local fields = {}
--- Note: Real AST traversal would be more robust. This is a simplified example.
--- We iterate over the body of the class
-local body = jq.query(class_node, ".children[] | select(.type == \"block\")")
--- ... implementation details for field extraction would go here ...
+-- Map Python types to JSON Schema types
+local type_mapping = {
+    ["str"] = "string",
+    ["int"] = "integer",
+    ["float"] = "number",
+    ["bool"] = "boolean"
+}
 
--- For simplicity, let's hardcode the extraction based on known structure
+-- Extract fields by iterating over the body of the class
+local properties = {}
+local body_children = jq.query(class_node, ".fields.body.children[]")
+
+-- JQ returns a single node if there's only one child, or a list.
+-- We ensure we're working with a list for the iterator.
+if body_children and body_children.type then body_children = { body_children } end
+
+for _, statement in ipairs(body_children or {}) do
+    -- We only care about assignments (which include type annotations in Python)
+    if statement.type == "assignment" then
+        -- Use named fields: 'left' for the variable and 'type' for its annotation
+        local field_name = jq.query(statement, ".fields.left.content")
+        -- The type field is a wrapper node, its first child is the actual type identifier
+        local field_type = jq.query(statement, ".fields.type.children[0].content")
+
+        if field_name and field_type then
+            properties[field_name] = { type = type_mapping[field_type] or "string" }
+        end
+    end
+end
+
 local schema = {
     title = class_name,
     type = "object",
-    properties = {
-        name = { type = "string" },
-        age = { type = "integer" },
-        email = { type = "string" }
-    }
+    properties = properties
 }
 
--- Write the schema to a file
+-- Write the schema to a file with indentation for readability
 cogeni.outfile("schema", "schema.json")
-write("schema", json.encode(schema))
+write("schema", json.encode(schema, { indent = true }))
 ```
 
 ## Step 3: Run the Generator
@@ -59,18 +83,32 @@ write("schema", json.encode(schema))
 Execute the following command in your terminal:
 
 ```bash
-cogeni run generate_schema.lua
+cogeni
 ```
 
 ## Step 4: Verify the Output
 
-Check the generated `schema.json` file. It should contain the JSON schema corresponding to your Python class.
+Check the generated `schema.json` file. It should contain a beautifully formatted JSON schema corresponding to your Python class.
 
 ```json
-{"title":"User","type":"object","properties":{"name":{"type":"string"},"age":{"type":"integer"},"email":{"type":"string"}}}
+{
+  "properties": {
+    "age": {
+      "type": "integer"
+    },
+    "email": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "title": "User",
+  "type": "object"
+}
 ```
 
 ## Next Steps
 
-- Explore the `cogeni.read_ast` documentation to learn more about AST structure.
+- Explore the [Lua API Reference](../lua-api-reference) to learn more about available modules.
 - Use `cogeni ast models.py` to inspect the raw AST and refine your JQ queries.

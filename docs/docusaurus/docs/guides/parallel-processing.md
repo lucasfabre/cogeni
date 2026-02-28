@@ -1,3 +1,8 @@
+---
+sidebar_position: 4
+title: "Parallel Processing"
+---
+
 # Parallel Processing
 
 `cogeni` is designed to be highly concurrent, handling file dependencies efficiently.

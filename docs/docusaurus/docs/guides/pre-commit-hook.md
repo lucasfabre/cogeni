@@ -1,3 +1,8 @@
+---
+sidebar_position: 5
+title: "Pre-commit Hook"
+---
+
 # Using the Pre-commit Hook
 
 `cogeni` provides a pre-commit hook to ensure that your generated code is always up-to-date with your source files. This prevents outdated generated files from being committed to your repository.

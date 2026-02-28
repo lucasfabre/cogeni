@@ -93,7 +93,7 @@ def main():
 
     # Create category JSON
     with open(os.path.join(out_dir, "_category_.json"), "w") as f:
-        f.write('{"label": "Man Pages", "position": 4}')
+        f.write('{"label": "Man Pages", "position": 10}')
 
     for root, dirs, files in os.walk(src_man_dir):
         for file in files:

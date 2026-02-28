@@ -32,13 +32,14 @@ var docCmd = &cobra.Command{
 
 		f.WriteString(`{
   "label": "CLI Reference",
-  "position": 2,
+  "position": 6,
   "link": {
     "type": "generated-index",
     "slug": "cli-reference",
     "description": "CLI Reference for cogeni commands."
   }
-}`)
+}
+`)
 
 		err = doc.GenMarkdownTree(rootCmd, outputDir)
 		if err != nil {

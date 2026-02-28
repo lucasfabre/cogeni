@@ -235,7 +235,7 @@ write("lua_man", content)
 -- Generate Markdown Output
 local md_output = {}
 table.insert(md_output, "---")
-table.insert(md_output, "sidebar_position: 3")
+table.insert(md_output, "sidebar_position: 8")
 table.insert(md_output, "id: lua-api-reference")
 table.insert(md_output, "title: Lua API Reference")
 table.insert(md_output, "---")

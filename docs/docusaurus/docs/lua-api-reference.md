@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 8
 id: lua-api-reference
 title: Lua API Reference
 ---
@@ -115,7 +115,7 @@ Parses source code into a detailed AST.
 **Parameters:**
 
 - `source` (string|table): File path or handle.
-- `language` (string): The grammar name (e.g. "go", "python").
+- `language` (string|nil): The grammar name (optional, defaults to file extension).
 
 
 **Returns:**
@@ -225,7 +225,7 @@ Encodes a Lua value to a JSON string.
 **Parameters:**
 
 - `val` (any): The value to encode.
-- `options` (table): Optional formatting options (e.g. ` + "`" + `{indent=true}` + "`" + `).
+- `options` (table): Optional formatting options (e.g. `{indent=true}`).
 
 
 **Returns:**
@@ -282,7 +282,7 @@ Encodes a Lua value to an XML string.
 **Parameters:**
 
 - `data` (any): The Lua value to encode.
-- `options` (table|nil): Optional formatting options (e.g. ` + "`" + `{root="root_name"}` + "`" + `).
+- `options` (table|nil): Optional formatting options (e.g. `{root="root_name"}`).
 
 
 **Returns:**
