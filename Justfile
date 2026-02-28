@@ -152,14 +152,13 @@ lint:
 	mise exec -- golangci-lint run ./...
 	just fmt
 
-test-lua: build
-	./cogeni run tests/lua/framework/test.lua
-
 test: build
 	go test ./...
+	./cogeni run tests/lua/framework/test.lua
 	./tests/shell/framework/run_all_tests.sh
 
 build-docs: build
+	./cogeni doc
 	./cogeni run cogeni.lua
 	python3 ./scripts/build_man_pages_md.py
 	./scripts/build_api_docs_md.sh

@@ -1,212 +1,318 @@
 ---
-sidebar_position: 1
+sidebar_position: 3
+id: lua-api-reference
+title: Lua API Reference
 ---
 
 # Lua API Reference
 
-The `cogeni` module provides the core functionality for reading ASTs and controlling the generation process. It also exposes several utility modules for file system operations, JSON manipulation, and JQ querying.
+The `cogeni` environment provides a suite of modules designed for AST-driven code generation.
 
-## Core Module (`cogeni`)
+## Global Variables
 
-The `cogeni` module is the entry point for most operations.
-
-### `read_ast(path)`
-
-Parses a source file using the configured Tree-sitter grammar and returns its Abstract Syntax Tree (AST) as a Lua table.
-
-**Arguments:**
-- `path` (string): The path to the source file to parse.
-
-**Returns:**
-- `table`: A Lua table representing the AST. Nodes have `type`, `start_byte`, `end_byte`, and `children`.
-
-**Example:**
-```lua
-local ast = cogeni.read_ast("src/main.py")
-print(ast.root.type) -- "module"
-```
-
-### `process(path)`
-
-Recursively triggers processing for another file. This is crucial for building dependency chains and ensuring that required files are processed before dependent ones.
-
-**Arguments:**
-- `path` (string): The path to the file to process.
-
-**Example:**
-```lua
-cogeni.process("src/models.py")
--- Code below runs after src/models.py has been processed if there's a dependency
-```
-
-### `outfile(id, path)`
-
-Registers a file as an output target for a specific ID. Any content written to this ID using `write()` will be saved to this file.
-
-**Arguments:**
-- `id` (string): A unique identifier for this output stream.
-- `path` (string): The destination file path.
-
-**Example:**
-```lua
-cogeni.outfile("models", "generated/models.py")
-write("models", "class User: pass")
-```
-
-### `outtag(id, path, tag)`
-
-Registers a specific tagged block within an existing file as an output target. This allows `cogeni` to inject code into files without overwriting the entire file.
-
-**Arguments:**
-- `id` (string): A unique identifier for this output stream.
-- `path` (string): The path to the file containing the tag.
-- `tag` (string): The name of the tag block (e.g., `<cogeni:mytag>`).
-
-**Example:**
-```lua
--- In src/hooks.py:
--- # <cogeni:hooks>
--- # </cogeni:hooks>
-
-cogeni.outtag("hooks", "src/hooks.py", "hooks")
-write("hooks", "def pre_save(): pass")
-```
-
-## File System Module (`fs`)
-
-The `fs` module provides utilities for file system traversal and path manipulation.
-
-### `find(pattern)`
-
-Finds files matching a glob pattern.
-
-**Arguments:**
-- `pattern` (string): The glob pattern (e.g., `src/**/*.py`).
-
-**Returns:**
-- `table`: A list of file paths.
-
-**Example:**
-```lua
-local files = fs.find("src/**/*.py")
-for _, file in ipairs(files) do
-    print(file)
-end
-```
-
-### `join(part1, part2, ...)`
-
-Joins path components into a single path string, handling platform-specific separators.
-
-**Arguments:**
-- `part...` (string): Path components.
-
-**Returns:**
-- `string`: The joined path.
-
-**Example:**
-```lua
-local path = fs.join("src", "models", "user.py")
-```
-
-### `basedir(path)`
-
-Returns the directory component of a path.
-
-**Arguments:**
-- `path` (string): The file path.
-
-**Returns:**
-- `string`: The directory path.
-
-**Example:**
-```lua
-local dir = fs.basedir("src/models/user.py") -- "src/models"
-```
-
-### `basename(path)`
-
-Returns the filename component of a path.
-
-**Arguments:**
-- `path` (string): The file path.
-
-**Returns:**
-- `string`: The filename.
-
-**Example:**
-```lua
-local name = fs.basename("src/models/user.py") -- "user.py"
-```
-
-## JSON Module (`json`)
-
-The `json` module provides encoding and decoding of JSON data.
-
-### `encode(table)`
-
-Encodes a Lua table into a JSON string.
-
-**Arguments:**
-- `table` (table): The Lua table to encode.
-
-**Returns:**
-- `string`: The JSON string.
-
-**Example:**
-```lua
-local data = { name = "cogeni", version = 1 }
-local json_str = json.encode(data)
-```
-
-### `decode(string)`
-
-Decodes a JSON string into a Lua table.
-
-**Arguments:**
-- `string` (string): The JSON string to decode.
-
-**Returns:**
-- `table`: The decoded Lua table.
-
-**Example:**
-```lua
-local data = json.decode('{"name": "cogeni"}')
-print(data.name)
-```
-
-## JQ Module (`jq`)
-
-The `jq` module allows you to run JQ queries directly on Lua tables or JSON strings. This is powerful for extracting data from ASTs or configuration files.
-
-### `query(input, filter)`
-
-Executes a JQ filter on the input.
-
-**Arguments:**
-- `input` (table or string): The input data (Lua table or JSON string).
-- `filter` (string): The JQ filter string.
-
-**Returns:**
-- `table` or `string` or `number` or `boolean`: The result of the query.
-
-**Example:**
-```lua
-local ast = cogeni.read_ast("config.json")
-local names = jq.query(ast, ".users[].name")
-```
+- `_CURRENT_FILE`: Absolute path to the currently executing Lua script.
+- `_FILE_EXTENSION`: Extension of the currently executing script (including the dot).
 
 ## Global Functions
 
+### `async(fn, ...)`
+
+Starts a new asynchronous task.
+
+**Parameters:**
+
+- `fn` (function): The function to run asynchronously.
+- `...` (any): Arguments to pass to the function.
+
+
+**Returns:**
+
+- userdata A job handle.
+
+### `await(job)`
+
+Pauses until a job completes.
+
+**Parameters:**
+
+- `job` (userdata): The job handle to wait for.
+
+
+**Returns:**
+
+- ... any The results of the async function.
+
+### `sleep(seconds)`
+
+Pauses execution for a duration.
+
+**Parameters:**
+
+- `seconds` (number): The number of seconds to sleep.
+
 ### `write(id, content)`
 
-Buffers generated content for a specific target ID. The ID must be registered via `outfile` or `outtag` first.
+Buffers text for a specific output block.
 
-**Arguments:**
-- `id` (string): The target identifier.
+**Parameters:**
+
+- `id` (string): The block ID.
 - `content` (string): The content to write.
 
-**Example:**
-```lua
-write("output_id", "content to write\n")
-```
+## Modules
+
+### cogeni
+
+#### `cogeni.get_grammar(ext)`
+
+Looks up a grammar name by file extension.
+
+**Parameters:**
+
+- `ext` (string): The file extension (including dot).
+
+
+**Returns:**
+
+- string The grammar name.
+
+#### `cogeni.outfile(id, path)`
+
+Redirects write(id) to a file.
+
+**Parameters:**
+
+- `id` (string): The block ID.
+- `path` (string): The file path to overwrite.
+
+#### `cogeni.outtag(id, path, tag)`
+
+Redirects write(id) to a specific tag in a file.
+
+**Parameters:**
+
+- `id` (string): The block ID.
+- `path` (string): The file path.
+- `tag` (string): The tag in the file.
+
+#### `cogeni.process(path)`
+
+Triggers the generation lifecycle for a file.
+
+**Parameters:**
+
+- `path` (string): The file path.
+
+
+**Returns:**
+
+- boolean True on success.
+
+#### `cogeni.read_ast(source, language)`
+
+Parses source code into a detailed AST.
+
+**Parameters:**
+
+- `source` (string|table): File path or handle.
+- `language` (string): The grammar name (e.g. "go", "python").
+
+
+**Returns:**
+
+- table The AST table.
+
+#### `cogeni.register_grammar(name, url, opts)`
+
+Registers a custom grammar source URL.
+
+**Parameters:**
+
+- `name` (string): The grammar name.
+- `url` (string): The git repository URL.
+- `opts` (table): Options (branch, build_cmd, artifact).
+
+### fs
+
+#### `fs.basedir(path)`
+
+Returns the directory of a path.
+
+**Parameters:**
+
+- `path` (string): The file path.
+
+
+**Returns:**
+
+- string The directory part of the path.
+
+#### `fs.basename(path)`
+
+Returns the last element of a path.
+
+**Parameters:**
+
+- `path` (string): The file path.
+
+
+**Returns:**
+
+- string The file name.
+
+#### `fs.find(dir, options)`
+
+Recursively finds files and directories.
+
+**Parameters:**
+
+- `dir` (string): The starting directory.
+- `options` (table): Filters (type="f"|"d", name="glob", maxdepth=N).
+
+
+**Returns:**
+
+- table A table where keys are paths and values are 'true'.
+
+#### `fs.join(...)`
+
+Joins multiple path elements.
+
+**Parameters:**
+
+- `...` (string): Path elements to join.
+
+
+**Returns:**
+
+- string The joined path.
+
+### jq
+
+#### `jq.query(val, query)`
+
+Executes a JQ query against a Lua value.
+
+**Parameters:**
+
+- `val` (any): The value to query (usually an AST table).
+- `query` (string): The JQ query string.
+
+
+**Returns:**
+
+- any|table A single result or a table of results, or nil.
+
+### json
+
+#### `json.decode(str)`
+
+Decodes a JSON string into a Lua table.
+
+**Parameters:**
+
+- `str` (string): The JSON string.
+
+
+**Returns:**
+
+- any The decoded Lua value.
+
+#### `json.encode(val, options)`
+
+Encodes a Lua value to a JSON string.
+
+**Parameters:**
+
+- `val` (any): The value to encode.
+- `options` (table): Optional formatting options (e.g. ` + "`" + `{indent=true}` + "`" + `).
+
+
+**Returns:**
+
+- string The JSON string.
+
+### toml
+
+#### `toml.decode(str)`
+
+Decodes a TOML string into a Lua table.
+
+**Parameters:**
+
+- `str` (string): The TOML string to decode.
+
+
+**Returns:**
+
+- any The decoded Lua value.
+
+#### `toml.encode(data)`
+
+Encodes a Lua value to a TOML string.
+
+**Parameters:**
+
+- `data` (any): The Lua value to encode.
+
+
+**Returns:**
+
+- string The TOML string.
+
+### xml
+
+#### `xml.decode(str)`
+
+Decodes an XML string into a Lua table.
+
+**Parameters:**
+
+- `str` (string): The XML string to decode.
+
+
+**Returns:**
+
+- any The decoded Lua value.
+
+#### `xml.encode(data, options)`
+
+Encodes a Lua value to an XML string.
+
+**Parameters:**
+
+- `data` (any): The Lua value to encode.
+- `options` (table|nil): Optional formatting options (e.g. ` + "`" + `{root="root_name"}` + "`" + `).
+
+
+**Returns:**
+
+- string The XML string.
+
+### yaml
+
+#### `yaml.decode(str)`
+
+Decodes a YAML string into a Lua table.
+
+**Parameters:**
+
+- `str` (string): The YAML string to decode.
+
+
+**Returns:**
+
+- any The decoded Lua value (table, string, number, etc).
+
+#### `yaml.encode(data)`
+
+Encodes a Lua value to a YAML string.
+
+**Parameters:**
+
+- `data` (any): The Lua value to encode.
+
+
+**Returns:**
+
+- string The YAML string.

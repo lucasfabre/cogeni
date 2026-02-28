@@ -231,3 +231,81 @@ table.insert(output, MAN_FOOTER)
 local content = table.concat(output, "\n")
 cogeni.outfile("lua_man", "docs/man/man7/cogeni-lua.7")
 write("lua_man", content)
+
+-- Generate Markdown Output
+local md_output = {}
+table.insert(md_output, "---")
+table.insert(md_output, "sidebar_position: 3")
+table.insert(md_output, "id: lua-api-reference")
+table.insert(md_output, "title: Lua API Reference")
+table.insert(md_output, "---")
+table.insert(md_output, "")
+table.insert(md_output, "# Lua API Reference")
+table.insert(md_output, "")
+table.insert(md_output, "The `cogeni` environment provides a suite of modules designed for AST-driven code generation.")
+table.insert(md_output, "")
+
+table.insert(md_output, "## Global Variables")
+table.insert(md_output, "")
+table.insert(md_output, "- `_CURRENT_FILE`: Absolute path to the currently executing Lua script.")
+table.insert(md_output, "- `_FILE_EXTENSION`: Extension of the currently executing script (including the dot).")
+table.insert(md_output, "")
+
+local function render_md_details(doc)
+	if #doc.params > 0 then
+		table.insert(md_output, "")
+		table.insert(md_output, "**Parameters:**")
+		table.insert(md_output, "")
+		for _, p in ipairs(doc.params) do
+			local desc = p.desc or ""
+			table.insert(md_output, "- `" .. p.name .. "` (" .. p.type .. "): " .. desc)
+		end
+		table.insert(md_output, "")
+	end
+
+	if doc.returns and doc.returns ~= "" then
+		table.insert(md_output, "")
+		table.insert(md_output, "**Returns:**")
+		table.insert(md_output, "")
+		table.insert(md_output, "- " .. doc.returns)
+		table.insert(md_output, "")
+	end
+end
+
+if docs_by_module["global"] then
+	table.insert(md_output, "## Global Functions")
+	table.insert(md_output, "")
+
+	for _, doc in ipairs(docs_by_module["global"]) do
+		local func_name = doc.usage and doc.usage or doc.func
+		table.insert(md_output, "### `" .. func_name .. "`")
+		table.insert(md_output, "")
+		if doc.summary and doc.summary ~= "" then
+			table.insert(md_output, doc.summary)
+		end
+		render_md_details(doc)
+	end
+end
+
+table.insert(md_output, "## Modules")
+table.insert(md_output, "")
+
+for _, mod in ipairs(modules) do
+	table.insert(md_output, "### " .. mod)
+	table.insert(md_output, "")
+	local funcs = docs_by_module[mod]
+
+	for _, doc in ipairs(funcs) do
+		local func_name = doc.usage and doc.usage or (mod .. "." .. doc.func)
+		table.insert(md_output, "#### `" .. func_name .. "`")
+		table.insert(md_output, "")
+		if doc.summary then
+			table.insert(md_output, doc.summary)
+		end
+		render_md_details(doc)
+	end
+end
+
+local md_content = table.concat(md_output, "\n")
+cogeni.outfile("lua_api_md", "docs/docusaurus/docs/lua-api-reference.md")
+write("lua_api_md", md_content)

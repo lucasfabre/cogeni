@@ -16,7 +16,7 @@ import (
 // @summary Encodes a Lua value to a JSON string.
 // @usage json.encode(val, options)
 // @param val any The value to encode.
-// @param options table Optional formatting options (e.g. {indent=true}).
+// @param options table Optional formatting options (e.g. ` + "`" + `{indent=true}` + "`" + `).
 // @returns string The JSON string.
 // </lua_api>
 func (rt *LuaRuntime) jsonEncode(L *lua.LState) int {

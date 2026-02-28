@@ -14,7 +14,7 @@ import (
 // @summary Encodes a Lua value to an XML string.
 // @usage xml.encode(data, options)
 // @param data any The Lua value to encode.
-// @param options table|nil Optional formatting options (e.g. {root="root_name"}).
+// @param options table|nil Optional formatting options (e.g. ` + "`" + `{root="root_name"}` + "`" + `).
 // @returns string The XML string.
 // </lua_api>
 func (rt *LuaRuntime) xmlEncode(L *lua.LState) int {

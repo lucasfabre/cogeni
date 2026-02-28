@@ -12,7 +12,9 @@ var completionCmd = &cobra.Command{
 	Short: "Generate completion script",
 	Long: `To load completions:
 
-Bash:
+### Bash:
+
+` + "```bash" + `
   $ source <(cogeni completion bash)
 
   # Note: if you are calling the binary via a relative path (e.g., ./cogeni),
@@ -21,8 +23,11 @@ Bash:
 
   # To load completions for each session, add to your .bashrc:
   # cogeni completion bash > /etc/bash_completion.d/cogeni
+` + "```" + `
 
-Zsh:
+### Zsh:
+
+` + "```zsh" + `
   # If shell completion is not already enabled in your environment,
   # you will need to enable it.  You can execute the following once:
   $ echo "autoload -U compinit; compinit" >> ~/.zshrc
@@ -33,19 +38,26 @@ Zsh:
   # Note: if you are calling the binary via a relative path (e.g., ./cogeni),
   # you must also register it for that path:
   # compdef _cogeni ./cogeni
+` + "```" + `
 
-Fish:
+### Fish:
+
+` + "```fish" + `
   $ cogeni completion fish | source
 
   # To load completions for each session, add to your config.fish:
   # cogeni completion fish > ~/.config/fish/completions/cogeni.fish
+` + "```" + `
 
-PowerShell:
+### PowerShell:
+
+` + "```powershell" + `
   PS> cogeni completion powershell | Out-String | Invoke-Expression
 
   # To load completions for every new session, run:
   PS> cogeni completion powershell > cogeni.ps1
   # and source this file from your PowerShell profile.
+` + "```" + `
 `,
 	DisableFlagsInUseLine: true,
 	ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},

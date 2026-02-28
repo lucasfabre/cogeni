@@ -40,6 +40,6 @@ repos:
     hooks:
       - id: cogeni
         name: cogeni (local)
-        entry: scripts/pre-commit-cogeni.sh
+        entry: scripts/pre-commit-cogeni.sh ./cogeni
         language: script
         pass_filenames: false

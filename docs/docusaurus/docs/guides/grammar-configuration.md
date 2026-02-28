@@ -1,47 +1,56 @@
+---
+sidebar_position: 2
+---
+
 # Grammar Configuration
 
-`cogeni` relies on [Tree-sitter](https://tree-sitter.github.io/tree-sitter/) grammars to parse source code. By default, it supports Python and TypeScript, but you can configure additional languages or override the defaults.
+`cogeni` uses Tree-sitter grammars to parse source code into an AST. By default, it manages downloading and building grammars for you. This guide explains how grammar resolution works and how you can configure custom grammars.
 
-## Configuration File
+## How `cogeni` Fetches Grammars
 
-The configuration is loaded from `config.yaml` in standard XDG directories (e.g., `~/.config/cogeni/config.yaml`).
+When `cogeni` encounters a file it needs to parse (e.g., via `cogeni.read_ast(path, "python")`), it first checks if the grammar for that language is already available locally in its cache directory (default is `~/.cache/cogeni/grammars`).
 
-## Adding a New Language
+If the grammar is not found, `cogeni` will attempt to automatically download and compile it from standard Tree-sitter GitHub repositories (e.g., `https://github.com/tree-sitter/tree-sitter-python`).
 
-To add support for a new language, you need to provide the grammar source and map file extensions to the language name.
+## Registering Custom Grammars
 
-```yaml
-grammar:
-  location: "~/.local/share/cogeni/grammars"
-  mapping:
-    ".go": "go"
-    ".rs": "rust"
-  sources:
-    go:
-      url: "https://github.com/tree-sitter/tree-sitter-go"
-      branch: "master"
-    rust:
-      url: "https://github.com/tree-sitter/tree-sitter-rust"
-```
+You may need to parse languages that `cogeni` does not know about by default, or you might want to use a specific fork or branch of a grammar. You can register custom grammars in two ways:
 
-## Overriding Defaults
+### 1. Via `config.yaml`
 
-If you want to use a specific version or fork of a grammar, you can override the default source URL.
+You can define custom grammars in your `config.yaml` file (usually located at `~/.config/cogeni/config.yaml` or `.cogeni.yaml` in your project root).
 
 ```yaml
-grammar:
-  sources:
-    python:
-      url: "https://github.com/my-org/tree-sitter-python"
+grammars:
+  - name: mylang
+    url: https://github.com/myuser/tree-sitter-mylang
+    branch: main
+    build_cmd: "make"
+    artifact: "mylang.so"
+    extensions:
+      - ".mlg"
+      - ".my"
 ```
 
-## Managing Grammars
+### 2. Via Lua Script
 
-`cogeni` will automatically download and compile grammars the first time they are needed. You can manually trigger an update or check the status using the CLI (future feature).
+You can also dynamically register grammars within your Lua scripts before they are needed:
 
-## Troubleshooting
+```lua
+cogeni.register_grammar("mylang", "https://github.com/myuser/tree-sitter-mylang", {
+    branch = "main",
+    build_cmd = "make",
+    artifact = "mylang.so"
+})
 
-If `cogeni` fails to parse a file, ensure that:
-1. The file extension is correctly mapped in `config.yaml`.
-2. The grammar source URL is reachable.
-3. You have a C compiler installed (required for building grammars).
+-- Now you can parse files with your custom grammar
+local ast = cogeni.read_ast("example.mlg", "mylang")
+```
+
+## Manual Grammar Compilation
+
+If you are working in an environment without internet access or simply prefer to manage grammars manually, you can compile the grammar yourself and place it in the cache directory.
+
+1. Clone the grammar repository.
+2. Build it according to its instructions (typically `make` or using a C compiler to create a shared object `.so` / `.dylib` / `.dll`).
+3. Copy the compiled artifact to the `cogeni` grammar cache directory, naming it `grammar-<name>.so` (e.g., `~/.cache/cogeni/grammars/grammar-mylang.so`).
