@@ -10,8 +10,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/mitchellh/go-homedir"
-	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -24,15 +23,15 @@ const (
 // is insufficient or when a custom grammar repository is required.
 type GrammarSource struct {
 	// URL is the Git repository URL containing the grammar source code.
-	URL string `mapstructure:"url" json:"url"`
+	URL string `yaml:"url" json:"url"`
 	// Branch is the specific Git branch to use (e.g., "master", "main", "develop").
-	Branch string `mapstructure:"branch" json:"branch"`
+	Branch string `yaml:"branch" json:"branch"`
 	// BuildCmd is an optional shell command to execute for building the grammar.
 	// If omitted, the manager will attempt a standard C/C++ compilation.
-	BuildCmd string `mapstructure:"build_cmd" json:"build_cmd"`
+	BuildCmd string `yaml:"build_cmd" json:"build_cmd"`
 	// Artifact is the name or relative path of the resulting shared library
 	// (e.g., "python.so", "build/sql.dylib").
-	Artifact string `mapstructure:"artifact" json:"artifact"`
+	Artifact string `yaml:"artifact" json:"artifact"`
 }
 
 // Config is the root configuration object for the cogeni application.
@@ -40,12 +39,12 @@ type Config struct {
 	// Grammar contains all settings related to Tree-sitter grammars.
 	Grammar struct {
 		// Location is the filesystem path where grammar shared libraries are cached.
-		Location string `mapstructure:"location" json:"location"`
+		Location string `yaml:"location" json:"location"`
 		// Mapping maps file extensions (e.g., ".py") to grammar names (e.g., "python").
-		Mapping map[string]string `mapstructure:"mapping" json:"mapping"`
+		Mapping map[string]string `yaml:"mapping" json:"mapping"`
 		// Sources provides custom build instructions for specific grammar names.
-		Sources map[string]GrammarSource `mapstructure:"sources" json:"sources"`
-	} `mapstructure:"grammar" json:"grammar"`
+		Sources map[string]GrammarSource `yaml:"sources" json:"sources"`
+	} `yaml:"grammar" json:"grammar"`
 }
 
 // LoadConfig initializes the application configuration.
@@ -53,24 +52,42 @@ type Config struct {
 // (e.g., ~/.config/cogeni/ on Linux) and applies defaults and environment variable overrides.
 // Environment variables follow the pattern COGENI_PATH_TO_KEY (e.g., COGENI_GRAMMAR_LOCATION).
 func LoadConfig() (*Config, error) {
-	v := viper.New()
-	v.SetConfigType("yaml")
-	v.SetConfigName("config")
+	cfg := &Config{}
 
 	// Determine config file path based on OS and XDG standards
 	configPath, err := getConfigPath()
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine config path: %w", err)
 	}
-	v.AddConfigPath(configPath)
 
-	// Set defaults
+	configFilePath := filepath.Join(configPath, "config.yaml")
+	data, err := os.ReadFile(configFilePath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return nil, fmt.Errorf("failed to read config file: %w", err)
+		}
+		// Config file not found, defaults will be used.
+		fmt.Fprintf(os.Stderr, "Config file not found in %s, using defaults.\n", configPath)
+	} else {
+		if err := yaml.Unmarshal(data, cfg); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+		}
+	}
+
+	// Apply defaults
 	defaultGrammarLocation, err := getDefaultGrammarLocation()
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine default grammar location: %w", err)
 	}
-	v.SetDefault("grammar.location", defaultGrammarLocation)
-	v.SetDefault("grammar.mapping", map[string]string{
+
+	if cfg.Grammar.Location == "" {
+		cfg.Grammar.Location = defaultGrammarLocation
+	}
+
+	if cfg.Grammar.Mapping == nil {
+		cfg.Grammar.Mapping = make(map[string]string)
+	}
+	defaultMapping := map[string]string{
 		".py":   "python",
 		".ts":   "typescript",
 		".js":   "javascript",
@@ -83,35 +100,70 @@ func LoadConfig() (*Config, error) {
 		".yaml": "yaml",
 		".yml":  "yaml",
 		".toml": "toml",
-	})
-
-	// Read config file
-	if err := v.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			// Config file not found, defaults will be used.
-			fmt.Fprintf(os.Stderr, "Config file not found in %s, using defaults.\n", configPath)
-		} else {
-			return nil, fmt.Errorf("failed to read config file: %w", err)
+	}
+	for k, v := range defaultMapping {
+		if _, exists := cfg.Grammar.Mapping[k]; !exists {
+			cfg.Grammar.Mapping[k] = v
 		}
 	}
 
 	// Environment variable overrides
-	v.SetEnvPrefix(strings.ToUpper(appName)) // e.g., COGENI_GRAMMAR_LOCATION
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	v.AutomaticEnv()
-
-	var cfg Config
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	if envLoc := os.Getenv("COGENI_GRAMMAR_LOCATION"); envLoc != "" {
+		cfg.Grammar.Location = envLoc
 	}
 
-	return &cfg, nil
+	// Iterate over environment variables and apply overrides
+	for _, env := range os.Environ() {
+		parts := strings.SplitN(env, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key, val := parts[0], parts[1]
+
+		// Support COGENI_GRAMMAR_MAPPING_EXT=LANG
+		if strings.HasPrefix(key, "COGENI_GRAMMAR_MAPPING_") {
+			ext := strings.TrimPrefix(key, "COGENI_GRAMMAR_MAPPING_")
+			ext = "." + strings.ToLower(ext)
+			cfg.Grammar.Mapping[ext] = val
+		}
+
+		// Support COGENI_GRAMMAR_SOURCES_NAME_FIELD=VALUE
+		if strings.HasPrefix(key, "COGENI_GRAMMAR_SOURCES_") {
+			rest := strings.TrimPrefix(key, "COGENI_GRAMMAR_SOURCES_")
+			// We expect NAME_FIELD, e.g. SQL_URL
+			parts := strings.SplitN(rest, "_", 2)
+			if len(parts) != 2 {
+				continue
+			}
+			name := strings.ToLower(parts[0])
+			field := strings.ToLower(parts[1])
+
+			if cfg.Grammar.Sources == nil {
+				cfg.Grammar.Sources = make(map[string]GrammarSource)
+			}
+
+			source := cfg.Grammar.Sources[name]
+			switch field {
+			case "url":
+				source.URL = val
+			case "branch":
+				source.Branch = val
+			case "build_cmd":
+				source.BuildCmd = val
+			case "artifact":
+				source.Artifact = val
+			}
+			cfg.Grammar.Sources[name] = source
+		}
+	}
+
+	return cfg, nil
 }
 
 // getConfigPath determines the configuration directory based on OS.
 func getConfigPath() (string, error) {
 	var configDir string
-	home, err := homedir.Dir()
+	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
@@ -140,7 +192,7 @@ func getConfigPath() (string, error) {
 // getDefaultGrammarLocation determines the default grammar storage directory based on OS.
 func getDefaultGrammarLocation() (string, error) {
 	var dataDir string
-	home, err := homedir.Dir()
+	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}

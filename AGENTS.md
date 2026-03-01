@@ -22,7 +22,7 @@ The project is structured into several Go packages:
 - `src/astparser/`: Manages Tree-sitter grammars and transforms native ASTs into a serializable format for Lua.
 - `src/lua_runtime/`: Provides a sandboxed Lua environment with custom bindings for AST access, file system, JQ, and JSON.
 - `src/processor/`: Orchestrates the code generation lifecycle, handling file dependencies and concurrent tasks.
-- `src/config/`: Configuration management using [Viper](https://github.com/spf13/viper).
+- `src/config/`: Configuration management.
 
 ## Technologies
 
