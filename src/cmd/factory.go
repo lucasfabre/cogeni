@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"os"
 	"path/filepath"
 
 	luaruntime "github.com/lucasfabre/codegen/src/lua_runtime"
@@ -67,4 +68,14 @@ func (ctx *executionContext) runEntrypoint(scriptPath string) error {
 	ctx.runtime.Schedule()
 
 	return nil
+}
+
+func findDefaultEntrypoint() (string, bool) {
+	if _, err := os.Stat(".cogeni/index.lua"); err == nil {
+		return ".cogeni/index.lua", true
+	}
+	if _, err := os.Stat("cogeni.lua"); err == nil {
+		return "cogeni.lua", true
+	}
+	return "", false
 }

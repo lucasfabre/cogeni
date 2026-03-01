@@ -48,20 +48,25 @@ var watchCmd = &cobra.Command{
 		if len(args) > 0 {
 			entryPath, _ = filepath.Abs(args[0])
 		} else {
-			// Stdin
-			fi, _ := os.Stdin.Stat()
-			if (fi.Mode() & os.ModeCharDevice) == 0 {
-				scanner := bufio.NewScanner(os.Stdin)
-				var script strings.Builder
-				for scanner.Scan() {
-					script.WriteString(scanner.Text())
-					script.WriteString("\n")
-				}
-				entryScript = script.String()
-				isStdin = true
-				entryPath = "stdin" // Dummy path for dependency tracking
+			// Check for default entrypoint first
+			if defEntry, ok := findDefaultEntrypoint(); ok {
+				entryPath, _ = filepath.Abs(defEntry)
 			} else {
-				return cmd.Help()
+				// Stdin
+				fi, _ := os.Stdin.Stat()
+				if (fi.Mode() & os.ModeCharDevice) == 0 {
+					scanner := bufio.NewScanner(os.Stdin)
+					var script strings.Builder
+					for scanner.Scan() {
+						script.WriteString(scanner.Text())
+						script.WriteString("\n")
+					}
+					entryScript = script.String()
+					isStdin = true
+					entryPath = "stdin" // Dummy path for dependency tracking
+				} else {
+					return cmd.Help()
+				}
 			}
 		}
 

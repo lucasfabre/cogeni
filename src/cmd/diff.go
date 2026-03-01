@@ -22,8 +22,8 @@ var diffCmd = &cobra.Command{
 
 		// 1. Run generation in memory
 		if len(args) == 0 {
-			if _, err := os.Stat("cogeni.lua"); err == nil {
-				if err := ctx.runEntrypoint("cogeni.lua"); err != nil {
+			if entrypoint, ok := findDefaultEntrypoint(); ok {
+				if err := ctx.runEntrypoint(entrypoint); err != nil {
 					return err
 				}
 			} else {

@@ -54,9 +54,9 @@ var cleanCmd = &cobra.Command{
 			return coordinator.Commit()
 		}
 
-		// Case 2: Default cogeni.lua
-		if _, err := os.Stat("cogeni.lua"); err == nil {
-			absEntry, _ := filepath.Abs("cogeni.lua")
+		// Case 2: Default entrypoint
+		if entrypoint, ok := findDefaultEntrypoint(); ok {
+			absEntry, _ := filepath.Abs(entrypoint)
 			if err := rt.ExecuteFile(absEntry); err != nil {
 				return err
 			}

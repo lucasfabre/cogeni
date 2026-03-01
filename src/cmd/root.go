@@ -23,15 +23,15 @@ var rootCmd = &cobra.Command{
 	Args:    cobra.ArbitraryArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
-			// Search for cogeni.lua in current directory
-			if _, err := os.Stat("cogeni.lua"); err == nil {
+			// Search for default entrypoint in current directory
+			if entrypoint, ok := findDefaultEntrypoint(); ok {
 				ctx, err := newExecutionContext()
 				if err != nil {
 					return err
 				}
 				defer ctx.runtime.Close()
 
-				if err := ctx.runEntrypoint("cogeni.lua"); err != nil {
+				if err := ctx.runEntrypoint(entrypoint); err != nil {
 					return err
 				}
 				return ctx.coordinator.Commit()

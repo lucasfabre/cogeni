@@ -24,13 +24,20 @@ var showDepGraphCmd = &cobra.Command{
 		}
 		defer ctx.runtime.Close()
 
-		entry := "cogeni.lua"
+		entry := ""
 		if len(args) > 0 {
 			entry = args[0]
+		} else {
+			if def, ok := findDefaultEntrypoint(); ok {
+				entry = def
+			}
 		}
 
 		// 1. Discovery Pass
-		if _, err := os.Stat(entry); err == nil {
+		if entry != "" {
+			if _, err := os.Stat(entry); err != nil {
+				return fmt.Errorf("script '%s' not found", entry)
+			}
 			if err := ctx.runEntrypoint(entry); err != nil {
 				return err
 			}
