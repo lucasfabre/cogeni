@@ -9,29 +9,69 @@ setup() {
 	cd "$TEST_DIR" || exit 1
 }
 
-teardown() {
-	cd ..
+is_windows() {
+	[ -n "$WINDIR" ] || command -v cmd.exe >/dev/null 2>&1
+}
+
+kill_watch_processes() {
 	local pid_file="$TEST_DIR/.watch.pid"
-	# The tests run in a subshell, so persist the watcher PID to disk for teardown.
+	if is_windows; then
+		powershell.exe -NoProfile -Command "Get-Process -Name cogeni -ErrorAction SilentlyContinue | Stop-Process -Force" >/dev/null 2>&1 || true
+		return
+	fi
+
 	if [ -f "$pid_file" ]; then
 		WATCH_PID="$(cat "$pid_file")"
 		if [ -n "$WATCH_PID" ]; then
-			if command -v cmd.exe >/dev/null 2>&1; then
-				cmd.exe /c "taskkill /PID $WATCH_PID /T /F >NUL 2>&1" || true
-			else
-				kill "$WATCH_PID" 2>/dev/null || true
-				wait "$WATCH_PID" 2>/dev/null || true
-			fi
-			sleep 1
+			kill "$WATCH_PID" 2>/dev/null || true
+			wait "$WATCH_PID" 2>/dev/null || true
 		fi
-		rm -f "$pid_file"
 	fi
-	for _ in 1 2 3 4 5 6 7 8 9 10; do
-		if rm -rf "$TEST_DIR" 2>/dev/null; then
+}
+
+watch_processes_gone() {
+	if is_windows; then
+		powershell.exe -NoProfile -Command "if (Get-Process -Name cogeni -ErrorAction SilentlyContinue) { exit 1 }" >/dev/null 2>&1
+		return $?
+	fi
+
+	local pid_file="$TEST_DIR/.watch.pid"
+	if [ ! -f "$pid_file" ]; then
+		return 0
+	fi
+
+	WATCH_PID="$(cat "$pid_file")"
+	if [ -z "$WATCH_PID" ]; then
+		return 0
+	fi
+
+	if kill -0 "$WATCH_PID" 2>/dev/null; then
+		return 1
+	fi
+	return 0
+}
+
+print_watch_diagnostics() {
+	if is_windows; then
+		echo "Remaining cogeni processes on Windows:" >&2
+		powershell.exe -NoProfile -Command "Get-Process -Name cogeni -ErrorAction SilentlyContinue | Format-Table -AutoSize Id,ProcessName,Path" >&2 || true
+	fi
+	if [ -f "$TEST_DIR/watch.log" ]; then
+		echo "watch.log:" >&2
+		cat "$TEST_DIR/watch.log" >&2
+	fi
+}
+
+teardown() {
+	cd ..
+	kill_watch_processes
+	for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+		if watch_processes_gone && rm -rf "$TEST_DIR" 2>/dev/null; then
 			return
 		fi
-		sleep 0.3
+		sleep 0.4
 	done
+	print_watch_diagnostics
 	rm -rf "$TEST_DIR"
 }
 

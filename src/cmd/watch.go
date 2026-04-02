@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -35,10 +36,26 @@ var watchCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		defer watcher.Close()
 
 		coordinator := processor.NewCoordinator(cfg)
 		defer coordinator.Close()
+
+		ctx, stopSignals := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stopSignals()
+
+		var shutdownOnce sync.Once
+		shutdown := func(reason string) error {
+			var shutdownErr error
+			shutdownOnce.Do(func() {
+				if reason != "" {
+					fmt.Println(reason)
+				}
+				stopSignals()
+				shutdownErr = watcher.Close()
+			})
+			return shutdownErr
+		}
+		defer func() { _ = shutdown("") }()
 
 		// Determine the entry point (file or stdin)
 		var entryScript string
@@ -180,10 +197,6 @@ var watchCmd = &cobra.Command{
 
 		fmt.Println("Watching for changes. Press 'q' to exit.")
 
-		// Setup signal handling
-		sigChan := make(chan os.Signal, 1)
-		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-
 		// Setup stop channel for user input
 		stopChan := make(chan struct{})
 
@@ -203,15 +216,17 @@ var watchCmd = &cobra.Command{
 		// Event loop
 		for {
 			select {
-			case <-sigChan:
-				fmt.Println("\nReceived interrupt, shutting down...")
-				return nil
+			case <-ctx.Done():
+				return shutdown("\nReceived interrupt, shutting down...")
 			case <-stopChan:
-				fmt.Println("Exiting watch mode...")
-				return nil
+				return shutdown("Exiting watch mode...")
 			case event, ok := <-watcher.Events:
 				if !ok {
 					return nil
+				}
+
+				if ctx.Err() != nil {
+					return shutdown("")
 				}
 
 				if event.Has(fsnotify.Write) || event.Has(fsnotify.Create) || event.Has(fsnotify.Rename) || event.Has(fsnotify.Remove) {
@@ -227,6 +242,9 @@ var watchCmd = &cobra.Command{
 
 					// Re-run, but delay slightly to allow file system to settle (especially for atomic saves/re-creates)
 					time.Sleep(100 * time.Millisecond)
+					if ctx.Err() != nil {
+						return shutdown("")
+					}
 					if err := execute(); err != nil {
 						fmt.Printf("Error during re-build: %v\n", err)
 					}
