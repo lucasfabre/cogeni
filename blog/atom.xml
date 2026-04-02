@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?><?xml-stylesheet type="text/xsl" href="atom.xsl"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-    <id>https://cogeni.dev/blog</id>
+    <id>https://lucasfabre.github.io/cogeni/blog</id>
     <title>cogeni Blog</title>
     <updated>2025-01-01T00:00:00.000Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
-    <link rel="alternate" href="https://cogeni.dev/blog"/>
+    <link rel="alternate" href="https://lucasfabre.github.io/cogeni/blog"/>
     <subtitle>cogeni Blog</subtitle>
     <entry>
         <title type="html"><![CDATA[Welcome to cogeni]]></title>
-        <id>https://cogeni.dev/blog/welcome</id>
-        <link href="https://cogeni.dev/blog/welcome"/>
+        <id>https://lucasfabre.github.io/cogeni/blog/welcome</id>
+        <link href="https://lucasfabre.github.io/cogeni/blog/welcome"/>
         <updated>2025-01-01T00:00:00.000Z</updated>
         <summary type="html"><![CDATA[Welcome to the official documentation for cogeni, the programmable runtime for generating artifacts from code and specs.]]></summary>
         <content type="html"><![CDATA[<p>Welcome to the official documentation for <strong>cogeni</strong>, the programmable runtime for generating artifacts from code and specs.</p>
-<p>Check out the <a class="" href="https://cogeni.dev/docs/introduction">Introduction</a> to get started with docs, SDK, CLI, and other derived-artifact workflows.</p>]]></content>
+<p>Check out the <a class="" href="https://lucasfabre.github.io/cogeni/docs/introduction">Introduction</a> to get started with docs, SDK, CLI, and other derived-artifact workflows.</p>]]></content>
         <author>
             <name>Lucas Fabre</name>
             <uri>https://github.com/lucasfabre</uri>

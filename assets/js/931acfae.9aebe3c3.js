@@ -1,0 +1,1 @@
+"use strict";(globalThis.webpackChunkdocs_docusaurus=globalThis.webpackChunkdocs_docusaurus||[]).push([[4536],{2418(e){e.exports=JSON.parse('{"tags":[{"label":"cogeni","permalink":"/cogeni/blog/tags/cogeni","count":1},{"label":"release","permalink":"/cogeni/blog/tags/release","count":1}]}')}}]);

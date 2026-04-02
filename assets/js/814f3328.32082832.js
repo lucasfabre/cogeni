@@ -1,1 +1,0 @@
-"use strict";(globalThis.webpackChunkdocs_docusaurus=globalThis.webpackChunkdocs_docusaurus||[]).push([[7472],{5513(e){e.exports=JSON.parse('{"title":"Recent posts","items":[{"title":"Welcome to cogeni","permalink":"/blog/welcome","unlisted":false,"date":"2025-01-01T00:00:00.000Z"}]}')}}]);
