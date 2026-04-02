@@ -11,11 +11,19 @@ setup() {
 
 teardown() {
 	cd ..
-	# Kill any lingering watch processes if variable is set
-	if [ -n "$WATCH_PID" ]; then
-		kill "$WATCH_PID" 2>/dev/null || true
-		wait "$WATCH_PID" 2>/dev/null || true
-		unset WATCH_PID
+	local pid_file="$TEST_DIR/.watch.pid"
+	# The tests run in a subshell, so persist the watcher PID to disk for teardown.
+	if [ -f "$pid_file" ]; then
+		WATCH_PID="$(cat "$pid_file")"
+		if [ -n "$WATCH_PID" ]; then
+			if command -v taskkill.exe >/dev/null 2>&1; then
+				taskkill.exe //PID "$WATCH_PID" //T //F >/dev/null 2>&1 || true
+			else
+				kill "$WATCH_PID" 2>/dev/null || true
+				wait "$WATCH_PID" 2>/dev/null || true
+			fi
+		fi
+		rm -f "$pid_file"
 	fi
 	for _ in 1 2 3 4 5; do
 		if rm -rf "$TEST_DIR" 2>/dev/null; then
@@ -33,6 +41,7 @@ it "should watch a simple file and update on change" '
     # Start watch
     $COGENI_BIN watch entry.lua > watch.log 2>&1 &
     WATCH_PID=$!
+    echo "$WATCH_PID" > .watch.pid
 
     # Wait for initial build
     wait_for_log "watch.log" "Watching for changes" || { echo "Timeout waiting for start"; cat watch.log; exit 1; }
@@ -59,6 +68,7 @@ it "should watch dependencies and update on change" '
     # Start watch
     $COGENI_BIN watch entry.lua > watch.log 2>&1 &
     WATCH_PID=$!
+    echo "$WATCH_PID" > .watch.pid
 
     wait_for_log "watch.log" "Watching for changes" || { echo "Timeout waiting for start"; cat watch.log; exit 1; }
 
@@ -79,6 +89,7 @@ it "should handle atomic saves (Rename)" '
 
     $COGENI_BIN watch entry.lua > watch.log 2>&1 &
     WATCH_PID=$!
+    echo "$WATCH_PID" > .watch.pid
 
     wait_for_log "watch.log" "Watching for changes" || { echo "Timeout waiting for start"; cat watch.log; exit 1; }
     wait_for_file_content "output.txt" "version 1" || { echo "Timeout waiting for version 1"; cat watch.log; exit 1; }
@@ -105,6 +116,7 @@ it "should detect circular dependencies" '
     # Start watch
     $COGENI_BIN watch A.lua > watch.log 2>&1 &
     WATCH_PID=$!
+    echo "$WATCH_PID" > .watch.pid
 
     # Wait for cycle detection message
     # "circular dependency detected" might be part of the error message
