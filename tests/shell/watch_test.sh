@@ -17,20 +17,20 @@ teardown() {
 		WATCH_PID="$(cat "$pid_file")"
 		if [ -n "$WATCH_PID" ]; then
 			if command -v cmd.exe >/dev/null 2>&1; then
-				cmd.exe /c taskkill //PID "$WATCH_PID" //T //F >/dev/null 2>&1 || true
+				cmd.exe /c "taskkill /PID $WATCH_PID /T /F >NUL 2>&1" || true
 			else
 				kill "$WATCH_PID" 2>/dev/null || true
 				wait "$WATCH_PID" 2>/dev/null || true
 			fi
-			sleep 0.5
+			sleep 1
 		fi
 		rm -f "$pid_file"
 	fi
-	for _ in 1 2 3 4 5; do
+	for _ in 1 2 3 4 5 6 7 8 9 10; do
 		if rm -rf "$TEST_DIR" 2>/dev/null; then
 			return
 		fi
-		sleep 0.2
+		sleep 0.3
 	done
 	rm -rf "$TEST_DIR"
 }
