@@ -8,6 +8,23 @@ NC='\033[0m'
 
 echo -e "${GREEN}Starting End-to-End Full-Stack Verification${NC}"
 
+get_venv_python() {
+	if [ -x ".venv/bin/python" ]; then
+		echo ".venv/bin/python"
+		return 0
+	fi
+	if [ -x ".venv/Scripts/python.exe" ]; then
+		echo ".venv/Scripts/python.exe"
+		return 0
+	fi
+	if [ -x ".venv/Scripts/python" ]; then
+		echo ".venv/Scripts/python"
+		return 0
+	fi
+	echo "Virtual environment Python executable not found" >&2
+	exit 1
+}
+
 # 0. Setup UV if missing
 if ! command -v uv >/dev/null 2>&1; then
 	if [[ ! -f "$HOME/.local/bin/uv" ]]; then
@@ -21,14 +38,11 @@ fi
 if [ ! -d ".venv" ]; then
 	echo "Creating virtual environment..."
 	uv venv
-	# Activate
-	# shellcheck source=/dev/null
-	source .venv/bin/activate
+	VENV_PYTHON="$(get_venv_python)"
 	echo "Installing Python dependencies..."
-	uv pip install fastapi uvicorn pydantic requests
+	uv pip install --python "$VENV_PYTHON" fastapi uvicorn pydantic requests
 else
-	# shellcheck source=/dev/null
-	source .venv/bin/activate
+	VENV_PYTHON="$(get_venv_python)"
 fi
 
 # 2. Test SQL Schema with SQLite
@@ -61,7 +75,7 @@ export PYTHONPATH=.
 export COGENI_TEST_PORT="$PORT"
 
 # Start server in background using the activated environment
-python3 main.py &
+"$VENV_PYTHON" main.py &
 SERVER_PID=$!
 
 # Wait for server to be ready

@@ -11,11 +11,19 @@ setup() {
 
 teardown() {
 	cd ..
-	rm -rf "$TEST_DIR"
 	# Kill any lingering watch processes if variable is set
 	if [ -n "$WATCH_PID" ]; then
 		kill "$WATCH_PID" 2>/dev/null || true
+		wait "$WATCH_PID" 2>/dev/null || true
+		unset WATCH_PID
 	fi
+	for _ in 1 2 3 4 5; do
+		if rm -rf "$TEST_DIR" 2>/dev/null; then
+			return
+		fi
+		sleep 0.2
+	done
+	rm -rf "$TEST_DIR"
 }
 
 it "should watch a simple file and update on change" '
