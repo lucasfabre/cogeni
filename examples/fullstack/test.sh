@@ -43,18 +43,22 @@ fi
 
 # 3. Start Backend Server
 echo "Step 3: Starting FastAPI server with UV..."
+PORT="${COGENI_TEST_PORT:-$((20000 + RANDOM % 20000))}"
+
 # Create a dummy main.py to run the app
 cat >main.py <<EOF
+import os
 import uvicorn
 from backend.routes import app
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=int(os.environ["COGENI_TEST_PORT"]))
 EOF
 
 # Use UV to run the server with dependencies
 # We set PYTHONPATH to . so it can find models.py and backend/
 export PYTHONPATH=.
+export COGENI_TEST_PORT="$PORT"
 
 # Start server in background using the activated environment
 python3 main.py &
@@ -64,7 +68,7 @@ SERVER_PID=$!
 echo "Waiting for server to start..."
 MAX_RETRIES=100
 COUNT=0
-while ! curl -s http://localhost:8000/todos >/dev/null; do
+while ! curl -s "http://127.0.0.1:$PORT/todos" >/dev/null; do
 	sleep 0.1
 	COUNT=$((COUNT + 1))
 	if [ $COUNT -ge $MAX_RETRIES ]; then
