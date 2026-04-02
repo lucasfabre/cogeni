@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/lucasfabre/codegen/src/config"
+	"github.com/lucasfabre/cogeni/src/config"
 )
 
 // Coordinator manages the parallel execution of code generation tasks.

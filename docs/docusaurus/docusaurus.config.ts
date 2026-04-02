@@ -6,7 +6,7 @@ import type * as Preset from "@docusaurus/preset-classic";
 
 const config: Config = {
   title: "cogeni",
-  tagline: "Language-Agnostic Code Generation Tool",
+  tagline: "Programmable artifact generation from code and specs",
   // favicon: 'img/favicon.ico',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
@@ -45,7 +45,7 @@ const config: Config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            "https://github.com/lucasfabre/codegen/tree/main/docs/docusaurus/",
+            "https://github.com/lucasfabre/cogeni/tree/main/docs/docusaurus/",
         },
         blog: {
           showReadingTime: true,
@@ -56,7 +56,7 @@ const config: Config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            "https://github.com/lucasfabre/codegen/tree/main/docs/docusaurus/",
+            "https://github.com/lucasfabre/cogeni/tree/main/docs/docusaurus/",
           // Useful options to enforce blogging best practices
           onInlineTags: "warn",
           onInlineAuthors: "warn",
@@ -104,7 +104,7 @@ const config: Config = {
         },
         /* {to: '/blog', label: 'Blog', position: 'left'}, */
         {
-          href: "https://github.com/lucasfabre/codegen",
+          href: "https://github.com/lucasfabre/cogeni",
           label: "GitHub",
           position: "right",
         },
@@ -135,11 +135,11 @@ const config: Config = {
           items: [
             {
               label: "GitHub Discussions",
-              href: "https://github.com/lucasfabre/codegen/discussions",
+              href: "https://github.com/lucasfabre/cogeni/discussions",
             },
             {
               label: "Issues",
-              href: "https://github.com/lucasfabre/codegen/issues",
+              href: "https://github.com/lucasfabre/cogeni/issues",
             },
           ],
         },
@@ -152,7 +152,7 @@ const config: Config = {
             },
             {
               label: "GitHub",
-              href: "https://github.com/lucasfabre/codegen",
+              href: "https://github.com/lucasfabre/cogeni",
             },
           ],
         },

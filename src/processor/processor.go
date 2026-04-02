@@ -10,8 +10,8 @@ import (
 	"unicode"
 
 	"github.com/clbanning/mxj/v2"
-	"github.com/lucasfabre/codegen/src/config"
-	luaruntime "github.com/lucasfabre/codegen/src/lua_runtime"
+	"github.com/lucasfabre/cogeni/src/config"
+	luaruntime "github.com/lucasfabre/cogeni/src/lua_runtime"
 	lua "github.com/yuin/gopher-lua"
 )
 
@@ -209,7 +209,7 @@ func ExtractCogeniBlocks(content string) string {
 		if strings.HasPrefix(line, prefix) {
 			code = line[len(prefix):]
 		} else {
-			// Robust fallback: strip prefix without the trailing space if it exists
+			// Fallback: strip prefix without the trailing space if it exists
 			trimmedPrefix := strings.TrimRightFunc(prefix, unicode.IsSpace)
 			if trimmedPrefix != "" && strings.HasPrefix(line, trimmedPrefix) {
 				code = line[len(trimmedPrefix):]

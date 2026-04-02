@@ -12,7 +12,7 @@ title: "Pre-commit Hook"
 Add the following to your `.pre-commit-config.yaml` file:
 
 ```yaml
-- repo: https://github.com/lucasfabre/codegen
+- repo: https://github.com/lucasfabre/cogeni
   rev: v0.1.0  # Use the latest release tag
   hooks:
     - id: cogeni
@@ -27,7 +27,7 @@ By default, the hook runs `cogeni run` without arguments, which executes all gen
 If you need to pass specific arguments to `cogeni run`, you can use the `args` key:
 
 ```yaml
-- repo: https://github.com/lucasfabre/codegen
+- repo: https://github.com/lucasfabre/cogeni
   rev: v0.1.0
   hooks:
     - id: cogeni

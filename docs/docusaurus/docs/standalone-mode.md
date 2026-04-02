@@ -5,7 +5,7 @@ title: "Standalone Mode"
 
 # Standalone Mode
 
-In addition to dedicated `.lua` scripts, `cogeni` can process files with embedded Lua blocks. These blocks are defined within comments, allowing you to keep generation logic close to the source.
+In addition to dedicated `.lua` scripts, `cogeni` can process files with embedded Lua blocks. These blocks are defined within comments, allowing you to keep artifact-generation logic close to the source that drives it.
 
 ## Embedding Lua Blocks
 

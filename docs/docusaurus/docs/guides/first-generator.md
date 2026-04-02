@@ -5,7 +5,7 @@ title: "First Generator"
 
 # Creating Your First Generator
 
-This guide will walk you through creating a simple code generator using `cogeni`. We'll create a Python script that defines a data model, and use `cogeni` to automatically generate a corresponding JSON schema.
+This guide walks through a simple artifact-generation workflow with `cogeni`. We will define a Python model and generate a JSON schema from it. The same pattern applies to docs, CLIs, SDKs, and other derived artifacts.
 
 ## Prerequisites
 
@@ -25,7 +25,7 @@ class User:
 
 ## Step 2: Create the Generator Script
 
-Create a file named `cogeni.lua` in the same directory. This script will read `models.py`, extract the class definition, and generate a JSON schema.
+Create a file named `cogeni.lua` in the same directory. This script reads `models.py`, extracts the class definition, and writes a derived artifact: `schema.json`.
 
 ```lua
 -- Read the AST of models.py
@@ -33,7 +33,7 @@ Create a file named `cogeni.lua` in the same directory. This script will read `m
 local ast = cogeni.read_ast("models.py")
 
 -- Find the class definition and its name using JQ
--- We query the root children and use named fields for robustness
+-- We query the root children and use named fields
 local class_node = jq.query(ast, ".children[] | select(.type == \"class_definition\")")
 local class_name = jq.query(class_node, ".fields.name.content")
 
@@ -88,7 +88,7 @@ cogeni
 
 ## Step 4: Verify the Output
 
-Check the generated `schema.json` file. It should contain a beautifully formatted JSON schema corresponding to your Python class.
+Check the generated `schema.json` file. It should contain a JSON schema derived from your Python class.
 
 ```json
 {
@@ -112,3 +112,4 @@ Check the generated `schema.json` file. It should contain a beautifully formatte
 
 - Explore the [Lua API Reference](../lua-api-reference) to learn more about available modules.
 - Use `cogeni ast models.py` to inspect the raw AST and refine your JQ queries.
+- Adapt the same workflow to generate docs, CLIs, or other project-specific artifacts.

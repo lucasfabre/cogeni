@@ -5,7 +5,7 @@ title: "CLI Usage"
 
 # CLI Usage
 
-`cogeni` provides a set of subcommands to manage the code generation process.
+`cogeni` provides a set of subcommands to manage artifact-generation workflows.
 
 ## Subcommands
 
@@ -25,7 +25,7 @@ cogeni clean generated/
 ```
 
 ### `diff [file...]`
-Shows a diff between the current file content and what `cogeni` would generate.
+Shows a diff between the current file content and the derived output `cogeni` would produce.
 
 ```bash
 cogeni diff models.py

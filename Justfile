@@ -159,7 +159,7 @@ test: build
 
 build-docs: build
 	./cogeni doc
-	./cogeni run cogeni.lua
+	cd examples/fullstack && ../../cogeni run cogeni.lua
 	python3 ./scripts/build_man_pages_md.py
 	./scripts/build_api_docs_md.sh
 	./scripts/build_site.sh

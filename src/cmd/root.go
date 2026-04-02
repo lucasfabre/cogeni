@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/lucasfabre/codegen/src/config"
-	"github.com/lucasfabre/codegen/src/processor"
+	"github.com/lucasfabre/cogeni/src/config"
+	"github.com/lucasfabre/cogeni/src/processor"
 	"github.com/spf13/cobra"
 )
 
@@ -17,8 +17,8 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:     "cogeni",
-	Short:   "cogeni is a language-agnostic code generation tool",
-	Long:    `A powerful tool that regenerates code blocks using embedded Lua scripts and JQ queries.`,
+	Short:   "Generate reproducible artifacts from code and specs",
+	Long:    `A programmable runtime for generating and synchronizing derived artifacts from source code and machine-readable specs.`,
 	Version: "0.1.0",
 	Args:    cobra.ArbitraryArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {

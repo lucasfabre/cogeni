@@ -36,3 +36,4 @@ class Todo(BaseModel):
         return f'<Product {self.id}>'
 
     def __repr__(self):
+        return f'<Todo {self.id}>'

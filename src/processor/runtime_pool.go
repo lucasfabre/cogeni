@@ -1,8 +1,8 @@
 package processor
 
 import (
-	"github.com/lucasfabre/codegen/src/config"
-	luaruntime "github.com/lucasfabre/codegen/src/lua_runtime"
+	"github.com/lucasfabre/cogeni/src/config"
+	luaruntime "github.com/lucasfabre/cogeni/src/lua_runtime"
 )
 
 // RuntimePool manages a pool of reusable LuaRuntime instances.

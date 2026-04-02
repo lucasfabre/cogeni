@@ -4,8 +4,8 @@ import (
 	"os"
 	"path/filepath"
 
-	luaruntime "github.com/lucasfabre/codegen/src/lua_runtime"
-	"github.com/lucasfabre/codegen/src/processor"
+	luaruntime "github.com/lucasfabre/cogeni/src/lua_runtime"
+	"github.com/lucasfabre/cogeni/src/processor"
 )
 
 // executionContext encapsulates the shared state and logic required for most cogeni subcommands.

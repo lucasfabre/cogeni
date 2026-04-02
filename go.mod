@@ -1,4 +1,4 @@
-module github.com/lucasfabre/codegen
+module github.com/lucasfabre/cogeni
 
 go 1.24.3
 

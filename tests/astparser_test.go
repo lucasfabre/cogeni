@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/lucasfabre/codegen/src/astparser"
+	"github.com/lucasfabre/cogeni/src/astparser"
 )
 
 var testGrammarDir string

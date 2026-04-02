@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/lucasfabre/codegen/src/astparser"
+	"github.com/lucasfabre/cogeni/src/astparser"
 	"github.com/spf13/cobra"
 )
 

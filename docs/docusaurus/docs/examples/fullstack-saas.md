@@ -1,6 +1,6 @@
 # Full-stack SaaS Example
 
-This example demonstrates how to use `cogeni` to build a comprehensive code generation pipeline for a full-stack SaaS application.
+This example demonstrates how to use `cogeni` to build a code generation pipeline for a full-stack SaaS application.
 
 ## Project Structure
 

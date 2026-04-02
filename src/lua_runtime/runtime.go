@@ -13,8 +13,8 @@ import (
 	"time"
 
 	async "github.com/CuberL/glua-async"
-	"github.com/lucasfabre/codegen/src/astparser"
-	"github.com/lucasfabre/codegen/src/config"
+	"github.com/lucasfabre/cogeni/src/astparser"
+	"github.com/lucasfabre/cogeni/src/config"
 	lua "github.com/yuin/gopher-lua"
 )
 

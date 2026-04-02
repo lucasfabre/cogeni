@@ -33,8 +33,8 @@ export default function Home(): ReactNode {
   const {siteConfig} = useDocusaurusContext();
   return (
     <Layout
-      title={`Hello from ${siteConfig.title}`}
-      description="Language-Agnostic Code Generation Tool">
+      title={siteConfig.title}
+      description="Programmable artifact generation from code and specs">
       <HomepageHeader />
       <main>
         <HomepageFeatures />

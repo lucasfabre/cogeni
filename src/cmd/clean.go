@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/lucasfabre/codegen/src/lua_runtime"
-	"github.com/lucasfabre/codegen/src/processor"
+	"github.com/lucasfabre/cogeni/src/lua_runtime"
+	"github.com/lucasfabre/cogeni/src/processor"
 	"github.com/spf13/cobra"
 )
 

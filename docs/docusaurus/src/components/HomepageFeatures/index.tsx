@@ -11,26 +11,26 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
   {
-    title: 'Language Agnostic',
+    title: 'Code And Spec Inputs',
     description: (
       <>
-        Supports any language with a Tree-sitter grammar. Parse and generate code for Python, TypeScript, Go, and more using a unified interface.
+        Parse source code with Tree-sitter, work with JSON, YAML, TOML, and XML, and build generation workflows from the files your project already treats as source of truth.
       </>
     ),
   },
   {
-    title: 'Lua Scripting',
+    title: 'Programmable Rules',
     description: (
       <>
-        Use the full power of Lua to define your code generation logic. No complex DSLs to learn—just standard Lua with powerful bindings.
+        Use Lua and JQ to define reusable generation rules. Agents can help maintain the rules, while cogeni executes them deterministically.
       </>
     ),
   },
   {
-    title: 'AST-Aware',
+    title: 'Derived Artifacts',
     description: (
       <>
-        Access detailed source code structure, not just regex-based matching. Query and manipulate the AST to perform precise code transformations.
+        Generate docs, SDKs, CLIs, schemas, config, and synchronized file sections from a shared runtime with dependency-aware execution.
       </>
     ),
   },

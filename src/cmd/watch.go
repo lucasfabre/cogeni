@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	luaruntime "github.com/lucasfabre/codegen/src/lua_runtime"
-	"github.com/lucasfabre/codegen/src/processor"
+	luaruntime "github.com/lucasfabre/cogeni/src/lua_runtime"
+	"github.com/lucasfabre/cogeni/src/processor"
 	"github.com/spf13/cobra"
 	lua "github.com/yuin/gopher-lua"
 )

@@ -1,6 +1,6 @@
 .TH COGENI 1 "February 2026" "0.1.0" "cogeni Manual"
 .SH NAME
-cogeni \- A language-agnostic code generation tool
+cogeni \- Generate reproducible artifacts from code and specs
 .SH SYNOPSIS
 .B cogeni
 [\fIFILES\fR...]
@@ -28,7 +28,7 @@ cogeni \- A language-agnostic code generation tool
 .B cogeni config show
 .SH DESCRIPTION
 .B cogeni
-is a tool designed to automate code generation by executing Lua scripts embedded directly within your source files. It leverages Tree-sitter for high-fidelity AST parsing and JQ for declarative data querying. It features parallel execution, automatic dependency tracking, and atomic filesystem commits.
+is a programmable runtime for generating and synchronizing derived artifacts from source code and machine-readable specs. It uses Tree-sitter for AST parsing and JQ for declarative data querying. It features parallel execution, automatic dependency tracking, and atomic filesystem commits.
 .SH CORE WORKFLOW
 The tool operates in three distinct phases:
 .TP
@@ -88,7 +88,7 @@ grammar:
 .fi
 .SH EXAMPLES
 .TP
-Generate code for a Python file:
+Generate artifacts for a Python file:
 \fBcogeni models.py\fR
 .TP
 See what changes would be made:

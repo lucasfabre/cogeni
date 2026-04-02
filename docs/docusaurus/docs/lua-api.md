@@ -5,11 +5,11 @@ title: "Lua API"
 
 # Lua API
 
-`cogeni` exposes several global modules to the Lua environment, allowing you to interact with the file system, parse ASTs, and generate code.
+`cogeni` exposes several global modules to the Lua environment so you can inspect source structure, process structured data, and generate derived artifacts.
 
 ## Core Module (`cogeni`)
 
-The `cogeni` module provides the core functionality for reading ASTs and controlling the generation process.
+The `cogeni` module provides the core functionality for reading ASTs, orchestrating dependent work, and routing generated output.
 
 ### `read_ast(path)`
 Parses a file and returns its AST as a Lua table.
@@ -34,7 +34,7 @@ write("models", "class User: pass")
 ```
 
 ### `outtag(id, path, tag)`
-Directs `write(id, content)` output to a tagged block in a file. This allows for modifying existing files.
+Directs `write(id, content)` output to a tagged block in a file. This is useful when you want to keep generated sections synchronized inside hand-maintained files.
 
 ```lua
 cogeni.outtag("hooks", "src/hooks.py", "pre_save")
@@ -68,7 +68,7 @@ local result = jq.query(data, ".users[] | .name")
 ## Global Functions
 
 ### `write(id, content)`
-Buffers generated content for a specific target ID (defined by `outfile` or `outtag`).
+Buffers generated content for a specific target ID defined by `outfile` or `outtag`.
 
 ```lua
 write("output_id", "content to write")

@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/lucasfabre/codegen/src/lua_runtime"
+	"github.com/lucasfabre/cogeni/src/lua_runtime"
 	"github.com/spf13/cobra"
 )
 

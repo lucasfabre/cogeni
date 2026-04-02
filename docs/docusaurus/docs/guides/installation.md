@@ -8,14 +8,14 @@ This guide explains how to install `cogeni` on your system.
 
 ## Download Binary
 
-We provide pre-compiled binaries for major operating systems and architectures. You can download the latest version from the releases page (coming soon).
+We publish pre-compiled binaries for major operating systems and architectures on the [GitHub releases page](https://github.com/lucasfabre/cogeni/releases).
 
 ## Install via `go install`
 
 If you have Go 1.25 or higher installed, you can build and install `cogeni` directly from the source repository:
 
 ```bash
-go install github.com/lucasfabre/codegen/src@latest
+go install github.com/lucasfabre/cogeni/src@latest
 ```
 
 This will download the source, compile it, and place the `cogeni` executable in your `$GOPATH/bin` directory (which is usually `~/go/bin`). Ensure that this directory is added to your system's `PATH`.
@@ -33,8 +33,8 @@ You can also clone the repository and build the binary yourself. This is useful 
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/lucasfabre/codegen.git
-   cd codegen
+   git clone https://github.com/lucasfabre/cogeni.git
+   cd cogeni
    ```
 
 2. Build the binary using `just`:

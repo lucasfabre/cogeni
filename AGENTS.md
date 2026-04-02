@@ -1,14 +1,14 @@
 # cogeni - Language-Agnostic Code Generation Tool
 
-`cogeni` is a powerful, language-agnostic code generation tool that leverages [Tree-sitter](https://tree-sitter.github.io/tree-sitter/) for AST parsing and [Lua](https://www.lua.org/) for generation logic. It allows developers to programmatically transform and generate source code across multiple languages using a unified scripting interface.
+`cogeni` is a language-agnostic runtime for generating reproducible artifacts from source code and machine-readable specs. It uses [Tree-sitter](https://tree-sitter.github.io/tree-sitter/) for AST parsing and [Lua](https://www.lua.org/) for programmable generation logic.
 
 ## Project Overview
 
-The core idea of `cogeni` is to parse source files into a rich, queryable Abstract Syntax Tree (AST), expose this AST to a Lua environment, and then use Lua scripts to generate new code or modify existing files. It handles complex tasks like dependency tracking between generated files and parallel execution.
+The core idea of `cogeni` is to parse source files into a queryable Abstract Syntax Tree (AST), expose this AST to a Lua environment, and then use Lua scripts to generate new code or modify existing files. It handles tasks like dependency tracking between generated files and parallel execution.
 
 ### Key Features
 - **Language Agnostic**: Supports any language with a Tree-sitter grammar.
-- **Lua Scripting**: Use the full power of Lua to define your code generation logic.
+- **Lua Scripting**: Use Lua to define your code generation logic.
 - **AST-Aware**: Access detailed source code structure, not just regex-based matching.
 - **JQ Integration**: Built-in support for querying JSON data using JQ within Lua.
 - **Parallel Orchestration**: Automatically manages file dependencies and processes files in parallel.
@@ -74,7 +74,7 @@ In addition to dedicated `.lua` scripts, `cogeni` can process files with embedde
 
 ## Examples
 
-- **[Full-stack SaaS](./examples/fullstack)**: A comprehensive example demonstrating recursive file processing, AST parsing of Python models, and generation of a FastAPI backend and TypeScript SDK.
+- **[Full-stack SaaS](./examples/fullstack)**: An example demonstrating recursive file processing, AST parsing of Python models, and generation of a FastAPI backend and TypeScript SDK.
 
 ### Development Commands
 ```bash

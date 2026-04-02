@@ -7,7 +7,7 @@ import (
 	"os"
 	"runtime/pprof"
 
-	"github.com/lucasfabre/codegen/src/cmd"
+	"github.com/lucasfabre/cogeni/src/cmd"
 )
 
 func main() {
