@@ -6,6 +6,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -30,6 +31,15 @@ type GrammarOptions struct {
 	Branch string
 	// URL is the Git repository URL for the grammar.
 	URL string
+}
+
+type httpStatusError struct {
+	statusCode int
+	url        string
+}
+
+func (e *httpStatusError) Error() string {
+	return fmt.Sprintf("http error %d for %s", e.statusCode, e.url)
 }
 
 // GrammarManager handles the lifecycle of Tree-sitter grammar shared libraries.
@@ -75,13 +85,14 @@ func (m *GrammarManager) GetLanguage(name string) (*sitter.Language, error) {
 
 	if _, err := os.Stat(libPath); os.IsNotExist(err) {
 		if err := m.fetchAndBuild(name, libPath, opts); err != nil {
-			// Fallback: many repositories recently renamed 'master' to 'main'
-			if !ok && opts.Branch == "master" {
+			var statusErr *httpStatusError
+			// Fallback only when the default branch archive is genuinely missing.
+			if !ok && opts.Branch == "master" && errors.As(err, &statusErr) && statusErr.statusCode == http.StatusNotFound {
 				opts.Branch = "main"
 				libPath = m.getLibraryPath(name, opts)
 				if _, errStat := os.Stat(libPath); os.IsNotExist(errStat) {
 					if errFetch := m.fetchAndBuild(name, libPath, opts); errFetch != nil {
-						return nil, fmt.Errorf("failed to fetch/build grammar '%s' (tried master and main): %w", name, errFetch)
+						return nil, fmt.Errorf("failed to fetch/build grammar '%s' (tried master and main): master=%v; main=%w", name, err, errFetch)
 					}
 				}
 			} else {
@@ -154,7 +165,7 @@ func (m *GrammarManager) downloadAndExtract(opts GrammarOptions, dest string) er
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("http error %d for %s", resp.StatusCode, url)
+		return &httpStatusError{statusCode: resp.StatusCode, url: url}
 	}
 
 	gz, err := gzip.NewReader(resp.Body)
@@ -250,7 +261,10 @@ func (m *GrammarManager) compileGrammar(parserC, libPath string) error {
 		return fmt.Errorf("no C compiler (gcc or clang) found in PATH")
 	}
 
-	args := []string{"-shared", "-fPIC", "-I", srcDir, "-o", libPath, parserC}
+	args := []string{"-shared", "-I", srcDir, "-o", libPath, parserC}
+	if runtime.GOOS != "windows" {
+		args = append(args, "-fPIC")
+	}
 	// Many grammars also require scanner.c or scanner.cc
 	if _, err := os.Stat(filepath.Join(srcDir, "scanner.c")); err == nil {
 		args = append(args, filepath.Join(srcDir, "scanner.c"))

@@ -1,7 +1,8 @@
 import { ApiClient } from "./api";
 
 async function test() {
-  const client = new ApiClient("http://localhost:8000");
+  const port = process.env.COGENI_TEST_PORT ?? "8000";
+  const client = new ApiClient(`http://127.0.0.1:${port}`);
 
   console.log("Testing Todo creation...");
   const newTodo = { id: 1, title: "Learn cogeni", completed: false };

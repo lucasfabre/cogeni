@@ -43,8 +43,10 @@ EOF
     out=$($COGENI_BIN diff examples/fullstack/backend/routes.py)
     assert_contains "$out" "diffmodels"
 
-    # Revert change by removing the last 4 lines
-    head -n -5 examples/fullstack/models.py > examples/fullstack/models.py.tmp && mv examples/fullstack/models.py.tmp examples/fullstack/models.py
+    # Revert change by removing the last 5 lines in a GNU/BSD portable way
+    total_lines=$(wc -l < examples/fullstack/models.py)
+    keep_lines=$((total_lines - 5))
+    sed -n "1,${keep_lines}p" examples/fullstack/models.py > examples/fullstack/models.py.tmp && mv examples/fullstack/models.py.tmp examples/fullstack/models.py
 '
 
 it "should run cogeni.lua by default in a project directory" '
