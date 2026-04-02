@@ -1,0 +1,1 @@
+"use strict";(globalThis.webpackChunkdocs_docusaurus=globalThis.webpackChunkdocs_docusaurus||[]).push([[8947],{6600(a){a.exports=JSON.parse('{"authors":[{"name":"Lucas Fabre","title":"Creator","url":"https://github.com/lucasfabre","imageURL":"https://github.com/lucasfabre.png","key":"lucasfabre","page":null,"count":1}]}')}}]);

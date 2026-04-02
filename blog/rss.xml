@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?><?xml-stylesheet type="text/xsl" href="rss.xsl"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+    <channel>
+        <title>cogeni Blog</title>
+        <link>https://cogeni.dev/blog</link>
+        <description>cogeni Blog</description>
+        <lastBuildDate>Wed, 01 Jan 2025 00:00:00 GMT</lastBuildDate>
+        <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+        <generator>https://github.com/jpmonette/feed</generator>
+        <language>en</language>
+        <item>
+            <title><![CDATA[Welcome to cogeni]]></title>
+            <link>https://cogeni.dev/blog/welcome</link>
+            <guid>https://cogeni.dev/blog/welcome</guid>
+            <pubDate>Wed, 01 Jan 2025 00:00:00 GMT</pubDate>
+            <description><![CDATA[Welcome to the official documentation for cogeni, the programmable runtime for generating artifacts from code and specs.]]></description>
+            <content:encoded><![CDATA[<p>Welcome to the official documentation for <strong>cogeni</strong>, the programmable runtime for generating artifacts from code and specs.</p>
+<p>Check out the <a class="" href="https://cogeni.dev/docs/introduction">Introduction</a> to get started with docs, SDK, CLI, and other derived-artifact workflows.</p>]]></content:encoded>
+            <category>cogeni</category>
+            <category>release</category>
+        </item>
+    </channel>
+</rss>
