@@ -301,14 +301,15 @@ func findParserFile(root, lang string) (string, error) {
 		if err != nil || info.IsDir() {
 			return nil
 		}
-		if info.Name() == "parser.c" && strings.Contains(path, "/src/") {
+		slashPath := filepath.ToSlash(path)
+		if info.Name() == "parser.c" && strings.Contains(slashPath, "/src/") {
 			if first == "" {
 				first = path
 			}
 
 			// A better match is one where the language name is a directory component just before 'src'
 			// e.g., .../typescript/src/parser.c
-			components := strings.Split(filepath.ToSlash(path), "/")
+			components := strings.Split(slashPath, "/")
 			for i := len(components) - 1; i >= 1; i-- {
 				if components[i] == "src" && i > 0 && components[i-1] == lang {
 					best = path
@@ -317,7 +318,7 @@ func findParserFile(root, lang string) (string, error) {
 			}
 
 			// Fallback: if 'best' is not set yet, check if lang is anywhere in the path
-			if best == "" && strings.Contains(path, lang) {
+			if best == "" && strings.Contains(slashPath, lang) {
 				best = path
 			}
 		}
