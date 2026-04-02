@@ -30,6 +30,17 @@ if [ -z "$COGENI_GRAMMAR_LOCATION" ]; then
 	mkdir -p "$COGENI_GRAMMAR_LOCATION"
 fi
 
+# Expose the repository root to Lua tests using a native path on Windows.
+if [ -z "$COGENI_TEST_ROOT" ]; then
+	PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+	if command -v cygpath >/dev/null 2>&1; then
+		COGENI_TEST_ROOT="$(cygpath -aw "$PROJECT_ROOT")"
+	else
+		COGENI_TEST_ROOT="$PROJECT_ROOT"
+	fi
+	export COGENI_TEST_ROOT
+fi
+
 describe() {
 	echo -e "
 $1"

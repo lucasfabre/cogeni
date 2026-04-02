@@ -1,5 +1,5 @@
 local T = require("tests/lua/framework/test_helper")
-local ROOT = io.popen("pwd"):read("*l")
+local ROOT = os.getenv("COGENI_TEST_ROOT") or io.popen("pwd"):read("*l")
 
 T.describe("jq integration", function()
 	T.it("should support jq", function()

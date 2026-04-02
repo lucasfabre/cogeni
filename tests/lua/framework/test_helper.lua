@@ -61,6 +61,10 @@ function M.assert_eq(actual, expected, message)
 	end
 end
 
+function M.normalize_path(path)
+	return tostring(path):gsub("\\", "/")
+end
+
 function M.summary()
 	print(string.format("\nTests complete: %d passed, %d failed", passes, failures))
 end

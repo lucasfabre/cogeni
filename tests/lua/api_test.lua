@@ -1,5 +1,5 @@
 local T = require("tests/lua/framework/test_helper")
-local ROOT = io.popen("pwd"):read("*l")
+local ROOT = os.getenv("COGENI_TEST_ROOT") or io.popen("pwd"):read("*l")
 
 T.describe("cogeni.read_ast", function()
 	T.it("should read from a file handle", function()
@@ -49,7 +49,7 @@ end)
 
 T.describe("fs path utilities", function()
 	T.it("should get basedir", function()
-		T.assert_eq(fs.basedir("a/b/c.txt"), "a/b")
+		T.assert_eq(T.normalize_path(fs.basedir("a/b/c.txt")), "a/b")
 		T.assert_eq(fs.basedir("a.txt"), ".")
 	end)
 
@@ -58,6 +58,6 @@ T.describe("fs path utilities", function()
 	end)
 
 	T.it("should join paths", function()
-		T.assert_eq(fs.join("a", "b", "c.txt"), "a/b/c.txt")
+		T.assert_eq(T.normalize_path(fs.join("a", "b", "c.txt")), "a/b/c.txt")
 	end)
 end)
