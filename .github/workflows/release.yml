@@ -64,10 +64,57 @@ jobs:
           path: ${{ matrix.archive_name }}
           if-no-files-found: error
 
+  docs:
+    name: Build docs artifact
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: docs/docusaurus/package-lock.json
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Build docs
+        run: |
+          go build -trimpath -buildvcs=false -o cogeni ./src
+          ./cogeni doc
+          (cd examples/fullstack && ../../cogeni run cogeni.lua)
+          python3 ./scripts/build_man_pages_md.py
+          ./scripts/build_api_docs_md.sh
+          ./scripts/build_site.sh
+          tar -czf cogeni-docs.tar.gz -C dist docs
+
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs
+          path: cogeni-docs.tar.gz
+          if-no-files-found: error
+
   publish:
     name: Publish release
     runs-on: ubuntu-latest
-    needs: build
+    needs:
+      - build
+      - docs
     steps:
       - name: Download release artifacts
         uses: actions/download-artifact@v4
