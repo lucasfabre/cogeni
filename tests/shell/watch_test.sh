@@ -16,12 +16,13 @@ teardown() {
 	if [ -f "$pid_file" ]; then
 		WATCH_PID="$(cat "$pid_file")"
 		if [ -n "$WATCH_PID" ]; then
-			if command -v taskkill.exe >/dev/null 2>&1; then
-				taskkill.exe //PID "$WATCH_PID" //T //F >/dev/null 2>&1 || true
+			if command -v cmd.exe >/dev/null 2>&1; then
+				cmd.exe /c taskkill //PID "$WATCH_PID" //T //F >/dev/null 2>&1 || true
 			else
 				kill "$WATCH_PID" 2>/dev/null || true
 				wait "$WATCH_PID" 2>/dev/null || true
 			fi
+			sleep 0.5
 		fi
 		rm -f "$pid_file"
 	fi
