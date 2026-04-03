@@ -36,8 +36,21 @@ repos:
         types_or: [ts, sql, yaml, toml]
         additional_dependencies: [prettier@3.1.0, prettier-plugin-sql]
 
-  - repo: .
-    rev: HEAD
+  - repo: local
     hooks:
       - id: cogeni
+        name: cogeni
         entry: scripts/pre-commit-cogeni.sh ./cogeni
+        language: script
+      - id: cogeni-fullstack
+        name: cogeni fullstack models
+        entry: scripts/pre-commit-cogeni.sh ./cogeni examples/fullstack/models.py
+        language: script
+        pass_filenames: false
+        files: ^examples/fullstack/models\.py$
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.9
+    hooks:
+      - id: ruff-format
+        files: ^examples/fullstack/models\.py$
