@@ -120,13 +120,12 @@ var watchCmd = &cobra.Command{
 				addWatch(entryPath)
 			}
 
-			// Watch all files tracked by the coordinator
+			// Watch the source tasks tracked by the coordinator.
+			// Generated output files are stored as dependencies too, but watching
+			// them causes self-triggered rebuild loops on some platforms.
 			graph := coordinator.GetGraph()
-			for taskPath, deps := range graph {
+			for taskPath := range graph {
 				addWatch(taskPath)
-				for _, dep := range deps {
-					addWatch(dep)
-				}
 			}
 		}
 
