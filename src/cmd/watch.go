@@ -239,7 +239,7 @@ var watchCmd = &cobra.Command{
 				debounceTimer.Stop()
 			}
 
-			debounceTimer = time.AfterFunc(150*time.Millisecond, func() {
+			debounceTimer = time.AfterFunc(300*time.Millisecond, func() {
 				select {
 				case rebuildChan <- struct{}{}:
 				default:
