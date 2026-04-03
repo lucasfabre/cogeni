@@ -20,11 +20,13 @@ title: "Parallel Processing"
 
 ## Controlling Concurrency
 
-By default, `cogeni` uses all available CPU cores. You can limit the concurrency using the `-j` flag (future feature) or by setting an environment variable `GOMAXPROCS`.
+By default, `cogeni` runs up to 10 concurrent processing jobs. You can control the maximum number of parallel tasks and Lua runtimes using the `-j` or `--jobs` flag, the `COGENI_CONCURRENCY` environment variable, or by setting `concurrency` in your `config.yaml`. The underlying Go runtime concurrency can also be bounded with the standard `GOMAXPROCS` environment variable.
 
 ```bash
-# Limit to 4 cores
-GOMAXPROCS=4 cogeni run
+# Limit to 4 concurrent jobs
+cogeni run -j 4
+# Or use the environment variable
+COGENI_CONCURRENCY=4 cogeni run
 ```
 
 ## Circular Dependencies

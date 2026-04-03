@@ -17,6 +17,14 @@ cogeni run script.lua
 cogeni run models.py
 ```
 
+### `watch [script.lua]`
+Watch the entry script and all its dependencies, re-running the generation process whenever a file changes.
+Watch mode is resilient: it debounces rapid file changes and stays alive even if script execution or dependency cycles trigger an error during rebuild.
+
+```bash
+cogeni watch cogeni.lua
+```
+
 ### `clean [file...]`
 Removes generated content from files, reverting them to their template state.
 

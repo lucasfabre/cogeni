@@ -143,7 +143,7 @@ it "should handle atomic saves (Rename)" '
     wait_for_file_content "output.txt" "version 2" || { echo "Timeout waiting for version 2"; cat watch.log; exit 1; }
 '
 
-it "should detect circular dependencies" '
+it "should detect circular dependencies and format them clearly" '
     # Create file A
     echo "-- <cogeni>" > A.lua
     echo "cogeni.process(\"B.lua\")" >> A.lua
@@ -159,7 +159,88 @@ it "should detect circular dependencies" '
     WATCH_PID=$!
     echo "$WATCH_PID" > .watch.pid
 
-    # Wait for cycle detection message
-    # "circular dependency detected" might be part of the error message
-    wait_for_log "watch.log" "circular dependency detected" || { echo "Timeout waiting for cycle detection"; cat watch.log; exit 1; }
+	    # Wait for cycle detection message
+	    wait_for_log "watch.log" "circular dependency detected" || { echo "Timeout waiting for cycle detection"; cat watch.log; exit 1; }
+	    wait_for_log "watch.log" "A.lua" || { echo "Timeout waiting for cycle detection formatting"; cat watch.log; exit 1; }
+
+	    # Ensure watch process stays alive after a failure
+	    kill -0 $WATCH_PID || { echo "Watch process died after cycle detection"; exit 1; }
+'
+
+it "should debounce rapid successive edits" '
+    echo "write(\"out\", \"version 1\")" > entry.lua
+    echo "cogeni.outfile(\"out\", \"output.txt\")" >> entry.lua
+
+    # Start watch
+    $COGENI_BIN watch entry.lua > watch.log 2>&1 &
+    WATCH_PID=$!
+    echo "$WATCH_PID" > .watch.pid
+
+    wait_for_log "watch.log" "Watching for changes" || { echo "Timeout waiting for start"; cat watch.log; exit 1; }
+    wait_for_file_content "output.txt" "version 1" || { echo "Timeout waiting for version 1"; cat watch.log; exit 1; }
+
+    # Perform rapid edits
+    echo "write(\"out\", \"version 2\")" > entry.lua
+    echo "cogeni.outfile(\"out\", \"output.txt\")" >> entry.lua
+    sleep 0.05
+    echo "write(\"out\", \"version 3\")" > entry.lua
+    echo "cogeni.outfile(\"out\", \"output.txt\")" >> entry.lua
+    sleep 0.05
+    echo "write(\"out\", \"version 4\")" > entry.lua
+    echo "cogeni.outfile(\"out\", \"output.txt\")" >> entry.lua
+
+    wait_for_file_content "output.txt" "version 4" || { echo "Timeout waiting for version 4"; cat watch.log; exit 1; }
+
+    # Verify that only 2 builds happened (initial + 1 debounced rebuild)
+    BUILD_COUNT=$(grep -c "Starting build..." watch.log)
+    if [ "$BUILD_COUNT" -gt 2 ]; then
+        echo "Expected at most 2 builds due to debouncing, but saw $BUILD_COUNT"
+        cat watch.log
+        exit 1
+    fi
+'
+
+it "should recover from script execution errors" '
+    echo "write(\"out\", \"version 1\")" > entry.lua
+    echo "cogeni.outfile(\"out\", \"output.txt\")" >> entry.lua
+
+    # Start watch
+    $COGENI_BIN watch entry.lua > watch.log 2>&1 &
+    WATCH_PID=$!
+    echo "$WATCH_PID" > .watch.pid
+
+    wait_for_log "watch.log" "Watching for changes" || { echo "Timeout waiting for start"; cat watch.log; exit 1; }
+    wait_for_file_content "output.txt" "version 1" || { echo "Timeout waiting for version 1"; cat watch.log; exit 1; }
+
+    # Introduce a syntax error
+    echo "INVALID_SYNTAX(" > entry.lua
+
+    wait_for_log "watch.log" "Execution failed in" || { echo "Timeout waiting for error log"; cat watch.log; exit 1; }
+
+    # Watcher should still be alive
+    kill -0 $WATCH_PID || { echo "Watch process died after script error"; exit 1; }
+
+    # Fix the error
+    echo "write(\"out\", \"version 2\")" > entry.lua
+    echo "cogeni.outfile(\"out\", \"output.txt\")" >> entry.lua
+
+    wait_for_file_content "output.txt" "version 2" || { echo "Timeout waiting for version 2"; cat watch.log; exit 1; }
+'
+
+it "should recover when the initial build fails" '
+    echo "INVALID_SYNTAX(" > entry.lua
+
+    $COGENI_BIN watch entry.lua > watch.log 2>&1 &
+    WATCH_PID=$!
+    echo "$WATCH_PID" > .watch.pid
+
+    wait_for_log "watch.log" "Execution failed in" || { echo "Timeout waiting for startup error"; cat watch.log; exit 1; }
+
+    # Watcher should still be alive and ready to react to the fix
+    kill -0 $WATCH_PID || { echo "Watch process died after initial failure"; exit 1; }
+
+    echo "write(\"out\", \"version 1\")" > entry.lua
+    echo "cogeni.outfile(\"out\", \"output.txt\")" >> entry.lua
+
+    wait_for_file_content "output.txt" "version 1" || { echo "Timeout waiting for recovery rebuild"; cat watch.log; exit 1; }
 '

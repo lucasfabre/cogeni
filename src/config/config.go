@@ -36,6 +36,8 @@ type GrammarSource struct {
 
 // Config is the root configuration object for the cogeni application.
 type Config struct {
+	// Concurrency is the maximum number of concurrent tasks and runtimes allowed.
+	Concurrency int `yaml:"concurrency" json:"concurrency"`
 	// Grammar contains all settings related to Tree-sitter grammars.
 	Grammar struct {
 		// Location is the filesystem path where grammar shared libraries are cached.
@@ -75,6 +77,10 @@ func LoadConfig() (*Config, error) {
 	}
 
 	// Apply defaults
+	if cfg.Concurrency <= 0 {
+		cfg.Concurrency = 10
+	}
+
 	defaultGrammarLocation, err := getDefaultGrammarLocation()
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine default grammar location: %w", err)
@@ -110,6 +116,12 @@ func LoadConfig() (*Config, error) {
 	// Environment variable overrides
 	if envLoc := os.Getenv("COGENI_GRAMMAR_LOCATION"); envLoc != "" {
 		cfg.Grammar.Location = envLoc
+	}
+	if envConcurrency := os.Getenv("COGENI_CONCURRENCY"); envConcurrency != "" {
+		var c int
+		if _, err := fmt.Sscanf(envConcurrency, "%d", &c); err == nil && c > 0 {
+			cfg.Concurrency = c
+		}
 	}
 
 	// Iterate over environment variables and apply overrides

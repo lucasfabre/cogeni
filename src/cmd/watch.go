@@ -103,7 +103,14 @@ var watchCmd = &cobra.Command{
 				if !watchedFiles[path] {
 					if err := watcher.Add(path); err == nil {
 						watchedFiles[path] = true
-						fmt.Printf("Watching: %s\n", path)
+						cwd, _ := os.Getwd()
+						rel, err := filepath.Rel(cwd, path)
+						if err != nil {
+							rel = path
+						}
+						fmt.Printf("Watching: %s\n", rel)
+					} else {
+						fmt.Printf("[\033[33mWarning\033[0m] Failed to watch %s: %v\n", path, err)
 					}
 				}
 			}
@@ -128,59 +135,60 @@ var watchCmd = &cobra.Command{
 			start := time.Now()
 			fmt.Printf("[\033[36m%s\033[0m] Starting build...\n", start.Format(time.TimeOnly))
 
-			// Create a new runtime for each execution to ensure fresh state
+			// Phase 1: Prepare watch state and runtime
 			rt, err := luaruntime.New(cfg)
 			if err != nil {
-				return err
+				fmt.Printf("[\033[31mError\033[0m] Failed to initialize runtime: %v\n", err)
+				return nil // Don't crash on initialization errors
 			}
 			defer rt.Close()
 
-			// Register entry path as a task so dependencies are recorded
 			coordinator.RegisterTask(entryPath)
-			// Ensure we signal completion of the entry task so dependents don't hang
 			defer coordinator.FinishTask(entryPath)
 
-			// Enable recursive processing
 			rt.ProcessFunc = func(path, requestor string) error {
 				return coordinator.Process(path, requestor)
 			}
 			rt.WaitFunc = coordinator.WaitForReader
 			rt.ReadFunc = coordinator.GetResult
 
+			// Phase 2: Execute entry script
 			if !isStdin {
 				if err := rt.ExecuteFile(entryPath); err != nil {
-					fmt.Printf("Error executing file: %v\n", err)
-					return nil // Don't crash on script errors
+					fmt.Printf("[\033[31mError\033[0m] Execution failed in %s: %v\n", entryPath, err)
+					return nil
 				}
 			} else {
-				// Set dummy current file for dependency tracking
 				rt.L.SetGlobal("_CURRENT_FILE", lua.LString(entryPath))
 				if err := rt.DoString(entryScript); err != nil {
-					fmt.Printf("Error executing script: %v\n", err)
+					fmt.Printf("[\033[31mError\033[0m] Execution failed in stdin script: %v\n", err)
 					return nil
 				}
 			}
 
-			// Mark entry task as done before waiting for workers (though we deferred it,
-			// calling it explicitly here ensures B wakes up if it's waiting)
 			coordinator.FinishTask(entryPath)
 
+			// Phase 3: Wait for async/dependent tasks
 			coordinator.WaitWithoutClosing()
+
+			// Phase 4: Schedule Lua finalizers
 			rt.Schedule()
 
-			// Capture results from the entry script
+			// Phase 5: Capture results
 			if err := coordinator.CaptureResults(rt, entryPath); err != nil {
-				fmt.Printf("Error capturing results: %v\n", err)
+				fmt.Printf("[\033[31mError\033[0m] Result capture failed for %s: %v\n", entryPath, err)
+				return nil
 			}
 
-			// Check for circular dependencies
+			// Phase 6: Detect cycles
 			if err := coordinator.DetectCycles(); err != nil {
-				fmt.Printf("[\033[31mError\033[0m] %v\n", err)
-				return nil // Stop here, do not commit
+				fmt.Printf("[\033[31mError\033[0m] Dependency cycle detected: %v\n", err)
+				return nil
 			}
 
+			// Phase 7: Commit changes
 			if err := coordinator.Commit(); err != nil {
-				fmt.Printf("[\033[31mError\033[0m] Failed to commit changes: %v\n", err)
+				fmt.Printf("[\033[31mError\033[0m] Commit failed: %v\n", err)
 			} else {
 				fmt.Printf("[\033[32mSuccess\033[0m] Build completed in %v\n", time.Since(start))
 			}
@@ -191,6 +199,10 @@ var watchCmd = &cobra.Command{
 		}
 
 		// Initial run
+		// Always watch the entry file before the first build so a startup failure
+		// can still recover when the user fixes the file.
+		updateWatchList()
+
 		if err := execute(); err != nil {
 			return err
 		}
@@ -211,6 +223,29 @@ var watchCmd = &cobra.Command{
 					}
 				}
 			}()
+		}
+
+		// Debouncing variables
+		var debounceTimer *time.Timer
+		var mu sync.Mutex
+
+		// Rebuild queue
+		rebuildChan := make(chan struct{}, 1)
+
+		triggerRebuild := func() {
+			mu.Lock()
+			defer mu.Unlock()
+
+			if debounceTimer != nil {
+				debounceTimer.Stop()
+			}
+
+			debounceTimer = time.AfterFunc(150*time.Millisecond, func() {
+				select {
+				case rebuildChan <- struct{}{}:
+				default:
+				}
+			})
 		}
 
 		// Event loop
@@ -240,20 +275,20 @@ var watchCmd = &cobra.Command{
 					// Invalidate the cache for the changed file and its dependents
 					coordinator.Invalidate(event.Name)
 
-					// Re-run, but delay slightly to allow file system to settle (especially for atomic saves/re-creates)
-					time.Sleep(100 * time.Millisecond)
-					if ctx.Err() != nil {
-						return shutdown("")
-					}
-					if err := execute(); err != nil {
-						fmt.Printf("Error during re-build: %v\n", err)
-					}
+					triggerRebuild()
 				}
 			case err, ok := <-watcher.Errors:
 				if !ok {
 					return nil
 				}
 				fmt.Printf("Watcher error: %v\n", err)
+			case <-rebuildChan:
+				if ctx.Err() != nil {
+					return shutdown("")
+				}
+				if err := execute(); err != nil {
+					fmt.Printf("[\033[31mError\033[0m] Fatal error during rebuild: %v\n", err)
+				}
 			}
 		}
 	},

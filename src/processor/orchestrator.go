@@ -49,12 +49,17 @@ func (t *Task) addDependency(path string) {
 
 // NewCoordinator creates a new Coordinator.
 func NewCoordinator(cfg *config.Config) *Coordinator {
+	concurrency := 10
+	if cfg != nil && cfg.Concurrency > 0 {
+		concurrency = cfg.Concurrency
+	}
+
 	return &Coordinator{
 		cfg:         cfg,
 		tasks:       make(map[string]*Task),
 		Results:     make(map[string]string),
 		fileCache:   make(map[string][]byte),
-		runtimePool: NewRuntimePool(cfg, 10), // Pool up to 10 runtimes
+		runtimePool: NewRuntimePool(cfg, concurrency), // Pool sized by configuration
 	}
 }
 
@@ -358,7 +363,19 @@ func (c *Coordinator) DetectCycles() error {
 	for node := range graph {
 		if !visited[node] {
 			if path, found := checkCycle(node); found {
-				return fmt.Errorf("circular dependency detected: %v", path)
+				cwd, _ := os.Getwd()
+				var formattedPath string
+				for i, p := range path {
+					rel, err := filepath.Rel(cwd, p)
+					if err != nil {
+						rel = p
+					}
+					if i > 0 {
+						formattedPath += " -> "
+					}
+					formattedPath += rel
+				}
+				return fmt.Errorf("circular dependency detected: %s", formattedPath)
 			}
 		}
 	}

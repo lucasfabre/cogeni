@@ -9,7 +9,7 @@ import (
 // This reduces the overhead of creating new Lua states for each file.
 type RuntimePool struct {
 	cfg     *config.Config
-	pool    chan *luaruntime.LuaRuntime
+	sem     chan struct{}
 	maxSize int
 }
 
@@ -17,33 +17,32 @@ type RuntimePool struct {
 func NewRuntimePool(cfg *config.Config, maxSize int) *RuntimePool {
 	return &RuntimePool{
 		cfg:     cfg,
-		pool:    make(chan *luaruntime.LuaRuntime, maxSize),
+		sem:     make(chan struct{}, maxSize),
 		maxSize: maxSize,
 	}
 }
 
-// Acquire gets a runtime from the pool or creates a new one if needed.
+// Acquire limits concurrency and returns a new runtime.
 func (rp *RuntimePool) Acquire() (*luaruntime.LuaRuntime, error) {
-	select {
-	case rt := <-rp.pool:
-		// Return a runtime from the pool
-		return rt, nil
-	default:
-		// Pool is empty, create a new runtime
-		return luaruntime.New(rp.cfg)
+	rp.sem <- struct{}{} // Block until a slot is available
+	rt, err := luaruntime.New(rp.cfg)
+	if err != nil {
+		<-rp.sem // Free the slot if initialization fails
+		return nil, err
 	}
+	return rt, nil
 }
 
-// Release returns a runtime to the pool for reuse.
+// Release closes the runtime and frees up a concurrency slot.
 func (rp *RuntimePool) Release(rt *luaruntime.LuaRuntime) {
 	// always close the runtime to avoid issues with glua-async state on reuse.
-	rt.Close()
-}
-
-// Close shuts down all runtimes in the pool.
-func (rp *RuntimePool) Close() {
-	close(rp.pool)
-	for rt := range rp.pool {
+	if rt != nil {
 		rt.Close()
 	}
+	<-rp.sem // Free the slot
+}
+
+// Close ensures the pool is in a valid state on teardown.
+func (rp *RuntimePool) Close() {
+	// no-op for now, runtimes are closed on Release
 }

@@ -48,4 +48,29 @@ func TestLoadConfigDefaults(t *testing.T) {
 	if cfg.Grammar.Mapping[".ts"] != "typescript" {
 		t.Errorf("Expected default mapping .ts -> typescript, got %q", cfg.Grammar.Mapping[".ts"])
 	}
+
+	if cfg.Concurrency != 10 {
+		t.Errorf("Expected default concurrency 10, got %d", cfg.Concurrency)
+	}
+}
+
+func TestLoadConfigConcurrencyEnv(t *testing.T) {
+	if err := os.Setenv("COGENI_CONFIG", "non-existent"); err != nil {
+		t.Fatalf("Failed to set env: %v", err)
+	}
+	defer func() { _ = os.Unsetenv("COGENI_CONFIG") }()
+
+	if err := os.Setenv("COGENI_CONCURRENCY", "42"); err != nil {
+		t.Fatalf("Failed to set env: %v", err)
+	}
+	defer func() { _ = os.Unsetenv("COGENI_CONCURRENCY") }()
+
+	cfg, err := LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig failed: %v", err)
+	}
+
+	if cfg.Concurrency != 42 {
+		t.Errorf("Expected concurrency 42, got %d", cfg.Concurrency)
+	}
 }

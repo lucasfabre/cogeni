@@ -6,6 +6,10 @@ Watch files and re-run generation on changes
 
 Watch the entry script and all its dependencies, re-running the generation process whenever a file changes.
 
+Watch mode includes debouncing to handle rapid file edits cleanly without overlapping rebuilds.
+It provides distinct rebuild phases with specific error diagnostics and remains alive
+after recoverable failures such as script execution errors or circular dependencies.
+
 ```
 cogeni watch [script.lua] [flags]
 ```

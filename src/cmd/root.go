@@ -12,7 +12,8 @@ import (
 )
 
 var (
-	cfg *config.Config
+	cfg  *config.Config
+	jobs int
 )
 
 var rootCmd = &cobra.Command{
@@ -21,6 +22,12 @@ var rootCmd = &cobra.Command{
 	Long:    `A programmable runtime for generating and synchronizing derived artifacts from source code and machine-readable specs.`,
 	Version: "0.1.0",
 	Args:    cobra.ArbitraryArgs,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if jobs > 0 && cfg != nil {
+			cfg.Concurrency = jobs
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			// Search for default entrypoint in current directory
@@ -59,6 +66,7 @@ func Execute() error {
 
 func init() {
 	cobra.OnInitialize(initConfig)
+	rootCmd.PersistentFlags().IntVarP(&jobs, "jobs", "j", 0, "Number of concurrent jobs/runtimes (default 10 or configured)")
 }
 
 // initConfig reads in config file and ENV variables if set.
